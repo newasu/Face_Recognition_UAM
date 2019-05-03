@@ -1,22 +1,21 @@
-% test1 find gender by measure euclidean distance
+% exp2 A find gender by WELM on small DiveFace
 
 clear all
 
 % Settings
 numb_run = 10;
+numb_cv = 5;
+
+% WELM's parameters
+hiddenNodes = 10:10:100;
+regularizationC = power(10,-4:1:4);
+distFunction = 'euclidean';
 
 % Save path
-saveFolder = 'Exp1';
-filename = 'exp1_dist_result';
-save_path = [pwd '/Result/' saveFolder '/' filename];
-
-% Make folder if not exist
-if ~exist([pwd '/Result' ],'dir')
-    mkdir([pwd '/Result' ]);
-end
-if ~exist([pwd '/Result/' saveFolder ],'dir')
-    mkdir([pwd '/Result/' saveFolder ]);
-end
+saveFolderPath = {'Result', 'Exp2', 'Exp2_A'};
+filename = [saveFolderPath{end} '_welm'];
+save_path = MakeChainFolder(saveFolderPath, 'target_path', pwd);
+save_path = [save_path '/' filename];
 
 % %Load data
 [diveface_feature, diveface_label] = LoadDiveFace();
@@ -31,12 +30,13 @@ for random_seed = 1 : numb_run
         (training_id_index, diveface_label, user_index, 'selected_pose_numb', 1, 'random_seed', random_seed);
     [test_selected_pose_index, test_unselected_pose_index] = RandomPickUserPose...
         (test_id_index, diveface_label, user_index, 'selected_pose_numb', 1, 'random_seed', random_seed);
-        
+
     % Training data
     trainingDataX_index = [training_selected_pose_index{:}];
     trainingDataX_index = trainingDataX_index(:);
     trainingDataX = diveface_feature(trainingDataX_index,:);
     trainingDataY = diveface_label.gender(trainingDataX_index);
+    trainingFileNames = diveface_label.filename(trainingDataX_index);
 
     % Test data
     testDataX_index = [test_selected_pose_index{:}];
@@ -45,24 +45,24 @@ for random_seed = 1 : numb_run
     testDataY = diveface_label.gender(testDataX_index);
     testFileNames = diveface_label.filename(testDataX_index);
     
-    % Class labels
-    class_name = categorical(categories(trainingDataY));
+    % Genarate k-fold indices
+    [ kFoldIdx, ~ ] = GetKFoldIndices( numb_cv, trainingDataY, random_seed );
 
-    % Predict
-    % consider by nearest user
-    [~, predict_score] = min(pdist2(testDataX, trainingDataX,'euclidean'), [], 2);
-    predictY = trainingDataY(predict_score);
-    accuracy_max(random_seed) = (sum(predictY==testDataY)/numel(testDataY)) * 100;
+    % Find optimal parameter
+    [ foldLog, avgFoldLog ] = welmCV(kFoldIdx, trainingDataX, trainingFileNames, ...
+        double(trainingDataY), 'seed', random_seed, 'hiddenNodes', hiddenNodes, ...
+        'regularizationC', regularizationC, 'distFunction', distFunction);
     
-    % consider by mean
-    predict_score_male = mean(pdist2(testDataX, trainingDataX(trainingDataY == 'male',:),'euclidean'), 2);
-    predict_score_female = mean(pdist2(testDataX, trainingDataX(trainingDataY == 'female',:),'euclidean'), 2);
-    [~, predict_score] = min([predict_score_female predict_score_male], [], 2);
-    predictY = class_name(predict_score);
-    accuracy_mean(random_seed) = (sum(predictY==testDataY)/numel(testDataY)) * 100;
+    % Test model
+    [trainingResult, testResult, testCorrectIdx] = TestWELMParams(trainingDataX, ...
+        double(trainingDataY), trainingFileNames, testDataX, double(testDataY), testFileNames, ...
+        'hiddenNodes', table2array(avgFoldLog(1,1)), 'regularizationC',  ...
+        table2array(avgFoldLog(1,2)), 'seed', random_seed, 'distFunction', distFunction);
+        
+    log(random_seed,:) = {foldLog trainingResult testResult};
 end
 
-log = table(accuracy_max', accuracy_mean', 'variablenames', {'accuracy_max', 'accuracy_mean'});
+log = cell2table(log, 'variablenames', {'foldLog' 'trainingResult' 'testResult'});
 eval([filename ' = log;']);
 save(save_path, filename,'-v7.3');
 

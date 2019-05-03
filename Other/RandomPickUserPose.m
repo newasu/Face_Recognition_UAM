@@ -26,10 +26,24 @@ function [selected_pose_index, unselected_pose_index] =...
 
 % Seperate user's pose
     temp_index = cellfun(@(x) find(ismember(my_data_label(:, id_index), x)),...
-        user_id_index, 'UniformOutput', false);
+        table2cell(user_id_index), 'UniformOutput', false);
     [selected_pose_index, unselected_pose_index] = cellfun(@(x)...
         mysort(my_data_label(:, id_index), x, random_selected_pose_index),...
         temp_index, 'UniformOutput', false);
+    
+%     Bind into table
+    gender_cat = user_id_index.Properties.RowNames;
+    ethnicity_cat = user_id_index.Properties.VariableNames;
+    temp_selected_pose_index = [];
+    temp_unselected_pose_index = [];
+    for i = 1 : size(selected_pose_index, 2)
+        temp_selected_pose_index = [temp_selected_pose_index table(selected_pose_index(:, i),...
+            'VariableNames', ethnicity_cat(i), 'RowNames', gender_cat)];
+        temp_unselected_pose_index = [temp_unselected_pose_index table(unselected_pose_index(:, i),...
+            'VariableNames', ethnicity_cat(i), 'RowNames', gender_cat)];
+    end
+    selected_pose_index = temp_selected_pose_index;
+    unselected_pose_index = temp_unselected_pose_index;
     
 end
 
