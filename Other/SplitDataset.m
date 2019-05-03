@@ -25,8 +25,8 @@ function [training_id_index, test_id_index, data, user_index] =...
     end   
 
 % Label
-    mylabel = strcat(string(gender), string(ethnicity));
-    [mylabel, ~] = grp2idx(mylabel);
+    concat_label = strcat(string(gender), string(ethnicity));
+    [mylabel, unique_concat_label] = grp2idx(concat_label);
     unique_mylabel = unique(mylabel);
     count_label = hist(mylabel, unique_mylabel);
 
@@ -41,6 +41,33 @@ function [training_id_index, test_id_index, data, user_index] =...
 % Bind random index to id
     training_id_index = cellfun(@(x) id(x), training_index, 'UniformOutput', false);
     test_id_index = cellfun(@(x) id(x), test_index, 'UniformOutput', false);
+    
+%     Bind training_id_index and test_id_index into table
+    temp = cell2mat(unique_concat_label);
+    temp_gender_index = str2num(temp(:,1));
+    temp_ethnicity_index = str2num(temp(:,2));
+    temp_training_id_index = cell(numel(gender_cat), numel(ethnicity_cat));
+    temp_test_id_index = cell(numel(gender_cat), numel(ethnicity_cat));
+    for i = 1 : numel(temp_training_id_index)
+        temp_training_id_index(temp_gender_index(i), temp_ethnicity_index(i))...
+            = training_id_index(i);
+        temp_test_id_index(temp_gender_index(i), temp_ethnicity_index(i))...
+            = test_id_index(i);
+    end
+    training_id_index = temp_training_id_index;
+    test_id_index = temp_test_id_index;
+    temp_training_id_index = [];
+    temp_test_id_index = [];
+    for i = 1 : size(training_id_index, 2)
+        temp_training_id_index = [temp_training_id_index table(training_id_index(:, i),...
+            'VariableNames', cellstr(ethnicity_cat(i)),...
+            'RowNames', cellstr(gender_cat))];
+        temp_test_id_index = [temp_test_id_index table(test_id_index(:, i),...
+            'VariableNames', cellstr(ethnicity_cat(i)),...
+            'RowNames', cellstr(gender_cat))];
+    end
+    training_id_index = temp_training_id_index;
+    test_id_index = temp_test_id_index;
     
 % Bind into table
     data = table(gender_cat(gender), ethnicity_cat(ethnicity), id,...

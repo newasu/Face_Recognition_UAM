@@ -6,12 +6,8 @@ function [predictY, accuracy, mdl, scores, trainingTime, testTime] = ldaClassify
     balance = getAdditionalParam( 'balance', varargin, 1 );
     kernelType = getAdditionalParam( 'kernelType', varargin, 'linear' );
     
-%     uniqueClass = unique(trainingDataY);
-%     numbClass = numel(uniqueClass);
-%     class_num = 1:numbClass;
     class_name = categorical(categories(trainingDataY));
     [new_trainingDataY, ~] = grp2idx(trainingDataY);
-%     new_trainingDataY = cell2mat(arrayfun(@(x) class_num(find(x==uniqueClass)), trainingDataY, 'UniformOutput', false));
     
     tic
     [W] = trainLDA_onevsall(trainingDataX, new_trainingDataY, balance, kernelType );
@@ -23,7 +19,6 @@ function [predictY, accuracy, mdl, scores, trainingTime, testTime] = ldaClassify
     
 %     Convert predictY back to actual label
     predictY = class_name(predictY);
-%     predictY = cell2mat(arrayfun(@(x) uniqueClass(find(x==class_num)), predictY, 'UniformOutput', false));
     
     accuracy = (sum(predictY==testDataY)/numel(testDataY)) * 100;
     scores = table(testFileNames, testDataY, predictY, 'VariableNames', {'filenames' 'labels', 'predict_labels'});

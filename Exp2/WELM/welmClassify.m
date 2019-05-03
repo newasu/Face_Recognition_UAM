@@ -1,6 +1,6 @@
 function [predictY, accuracy, mdl, scores, trainingTime, testTime] = welmClassify(...
-    trainingDataX, trainingDataY, testDataX, testDataY, testFileNames, varargin)
-%ANNCLASSIFY Summary of this function goes here
+    trainingDataX, trainingDataY, trainingCode, testDataX, testDataY, testFileNames, varargin)
+%WELMClassify Summary of this function goes here
 %   Detailed explanation goes here
 
     distFunction = getAdditionalParam( 'distFunction', varargin, 'cosine' );  % euclidean cosine
@@ -9,14 +9,11 @@ function [predictY, accuracy, mdl, scores, trainingTime, testTime] = welmClassif
     hiddenNodes = getAdditionalParam( 'hiddenNodes', varargin, [100] );
     seed = getAdditionalParam( 'seed', varargin, 1 );
     
-    uniqueClass = unique(trainingDataY);
-    numbClass = numel(uniqueClass);
-    class_num = 1:numbClass;
-    new_trainingDataY = cell2mat(arrayfun(@(x) class_num(find(x==uniqueClass)), trainingDataY, 'UniformOutput', false));
-    
-    [ W ] = initHidden( hiddenNodes , trainingDataX , seed );
-    beta = [];
-    
+    class_name = categorical(categories(trainingDataY));
+    [new_trainingDataY, ~] = grp2idx(trainingDataY);
+
+    [ W, W_code ] = initHidden( hiddenNodes , trainingDataX , seed, trainingCode );
+
     tic
     [~, beta] = trainWELM_onevsall(trainingDataX, new_trainingDataY, W, regularizationC, balance, distFunction);
     trainingTime = toc;
@@ -26,12 +23,12 @@ function [predictY, accuracy, mdl, scores, trainingTime, testTime] = welmClassif
     testTime = toc;
     
 %     Convert predictY back to actual label
-    predictY = cell2mat(arrayfun(@(x) uniqueClass(find(x==class_num)), predictY, 'UniformOutput', false));
+    predictY = class_name(round(predictY));
     
-    accuracy = (sum(round(predictY)==testDataY)/numel(testDataY)) * 100;
+    accuracy = (sum(predictY==testDataY)/numel(testDataY)) * 100;
     scores = table(testFileNames, testDataY, predictY, 'VariableNames', {'filenames' 'labels', 'predict_labels'});
     
-    mdl = table(W, beta);
+    mdl = table(W_code, beta);
 end
 
 function [W, beta] = trainWELM_onevsall(X, T, W, regularizationC, balance, distFunction )
@@ -58,12 +55,14 @@ function oh = convert_onehot(c,nc)
     oh(c) = 1;
 end
 
-function [ W ] = initHidden( h , X , seed )
+function [ W, W_code ] = initHidden( h , X , seed, code )
     X_size = size(X,1);
     h_size = round((h/100) * X_size);
     h_size = min(X_size, h_size);
     rng(seed);
-    W = X(randperm(size(X,1),h_size),:);
+    random_pick_index = randperm(size(X,1),h_size);
+    W = X(random_pick_index, :);
+    W_code = code(random_pick_index, :);
 end
 
 function [ HH ] = simKernel(XX, WW, distFunc)

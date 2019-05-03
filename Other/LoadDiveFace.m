@@ -1,8 +1,10 @@
-function [raw_feature, label] = LoadDiveFace()
+function [raw_feature, label] = LoadDiveFace(varargin)
 %LOADDIVEFACE Summary of this function goes here
 %   Detailed explanation goes here
+
+    dataset_path = getAdditionalParam( 'dataset_path', varargin, pwd );
     
-    diveface_path = '/Users/Wasu/Google Drive/MacBook/PhD''s Degree/New/SourceCode/FaceRecognition/DiveFace/';
+    diveface_path = [dataset_path '/Dataset/DiveFace1/'];
     
     %Each feature vector is composed by 2048 featutes
     raw_feature = importdata([diveface_path 'embeddings.txt']);
