@@ -1,4 +1,4 @@
-% exp2 B find gender by WELM on full DiveFace
+% exp2 B find gender(Exp2_B) and ethnicity(Exp2_C) by WELM on full DiveFace
 
 clear all
 
@@ -9,14 +9,12 @@ training_sample_percent = 0.75; % percentages of training sample
 selected_pose_numb = 1; % number of image used each user
 
 % WELM's parameters
-% hiddenNodes = 10:10:100;
-% regularizationC = power(10,-4:1:4);
-hiddenNodes = 10:10:20;
-regularizationC = power(10,-1:1:0);
+hiddenNodes = 10:10:100;
+regularizationC = power(10,-4:1:4);
 distFunction = 'euclidean';
 
 % Save path
-saveFolderPath = {'Result', 'Exp2', 'Exp2_B'};
+saveFolderPath = {'Result', 'Exp2', 'Exp2_C'};
 filename = [saveFolderPath{end} '_welm'];
 save_path = MakeChainFolder(saveFolderPath, 'target_path', pwd);
 save_path = [save_path '/' filename];
@@ -38,32 +36,36 @@ for random_seed = 1 : numb_run
         selected_pose_numb, 'random_seed', random_seed);
 
     % Training data
-    trainingDataX_index = table2cell(training_selected_pose_index);
-    trainingDataX_index = [trainingDataX_index{:}];
-    trainingDataX_index = trainingDataX_index(:);
-    trainingDataX = diveface_feature(trainingDataX_index,:);
-    trainingDataY = diveface_label.gender(trainingDataX_index);
-    trainingFileNames = diveface_label.filename(trainingDataX_index);
+    trainingData_index = table2cell(training_selected_pose_index);
+    trainingData_index = [trainingData_index{:}];
+    trainingData_index = trainingData_index(:);
+    trainingDataX = diveface_feature(trainingData_index,:);
+%     trainingDataY = diveface_label.gender(trainingDataX_index);
+    trainingDataY = diveface_label.ethnicity(trainingData_index);
+    trainingFileNames = diveface_label.filename(trainingData_index);
+    training_data_id = diveface_label.data_id(trainingData_index);
 
     % Test data
-    testDataX_index = table2cell(test_selected_pose_index);
-    testDataX_index = [testDataX_index{:}];
-    testDataX_index = testDataX_index(:);
-    testDataX = diveface_feature(testDataX_index,:);
-    testDataY = diveface_label.gender(testDataX_index);
-    testFileNames = diveface_label.filename(testDataX_index);
+    testData_index = table2cell(test_selected_pose_index);
+    testData_index = [testData_index{:}];
+    testData_index = testData_index(:);
+    testDataX = diveface_feature(testData_index,:);
+%     testDataY = diveface_label.gender(testDataX_index);
+    testDataY = diveface_label.ethnicity(testData_index);
+    testFileNames = diveface_label.filename(testData_index);
+    test_data_id = diveface_label.data_id(testData_index);
     
     % Genarate k-fold indices
     [ kFoldIdx, ~ ] = GetKFoldIndices( numb_cv, trainingDataY, random_seed );
 
     % Find optimal parameter
-    [ foldLog, avgFoldLog ] = welmCV(kFoldIdx, trainingDataX, trainingFileNames, ...
-        double(trainingDataY), 'seed', random_seed, 'hiddenNodes', hiddenNodes, ...
+    [ foldLog, avgFoldLog ] = welmCV(kFoldIdx, trainingDataX, trainingDataY, ...
+        trainingFileNames, training_data_id, 'seed', random_seed, 'hiddenNodes', hiddenNodes, ...
         'regularizationC', regularizationC, 'distFunction', distFunction);
     
     % Test model
     [trainingResult, testResult, testCorrectIdx] = TestWELMParams(trainingDataX, ...
-        double(trainingDataY), trainingFileNames, testDataX, double(testDataY), testFileNames, ...
+        trainingDataY, trainingFileNames, training_data_id, testDataX, testDataY, testFileNames, ...
         'hiddenNodes', table2array(avgFoldLog(1,1)), 'regularizationC',  ...
         table2array(avgFoldLog(1,2)), 'seed', random_seed, 'distFunction', distFunction);
         

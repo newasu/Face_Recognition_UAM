@@ -26,7 +26,7 @@ function [raw_feature, label] = LoadDiveFaceFull(varargin)
     ethnicity_index = 2;
     id_index = 3;
     pose_index = 4;
-    user_code_index = 5;
+    data_id_index = 5;
     
     gender_cat = categorical({'male', 'female'});
     ethnicity_cat = categorical({'black', 'asian', 'caucasian'});
@@ -44,7 +44,7 @@ function [raw_feature, label] = LoadDiveFaceFull(varargin)
     
     gender = gender_cat(my_data_label(:,gender_index) + 1)';
     ethnicity = ethnicity_cat(my_data_label(:,ethnicity_index) + 1)';
-    user_code = 1:numel(gender);
+    data_id = 1:numel(gender);
     
 %     For temporarily
     raw_label_filename = strcat(string(my_data_label(:, id_index)), '_',...
@@ -52,8 +52,8 @@ function [raw_feature, label] = LoadDiveFaceFull(varargin)
     
     % Bind into table
     label = table(gender, ethnicity, my_data_label(:, id_index),...
-        my_data_label(:, pose_index), raw_label_filename, user_code',...
-        'VariableNames', {'gender', 'ethnicity', 'id', 'pose', 'filename', 'user_code'});
+        my_data_label(:, pose_index), raw_label_filename, data_id',...
+        'VariableNames', {'gender', 'ethnicity', 'id', 'pose', 'filename', 'data_id'});
     
 end
 
