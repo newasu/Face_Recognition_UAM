@@ -1,8 +1,8 @@
-function [ foldLog, avgFoldLog ] = mlpCV(foldIdx, data, fileNames, labels, varargin)
+function [ foldLog, avgFoldLog ] = mlpCV(foldIdx, data, labels, fileNames, varargin)
 %annCV Summary of this function goes here
 %   Detailed explanation goes here
 
-    transferFunction = getAdditionalParam( 'transferFunction', varargin, 'tansig' );
+%     transferFunction = getAdditionalParam( 'transferFunction', varargin, 'tansig' );
     hiddenNodes = getAdditionalParam( 'hiddenNodes', varargin, [100] );
     seed = getAdditionalParam( 'seed', varargin, 1 );
 
@@ -28,8 +28,7 @@ function [ foldLog, avgFoldLog ] = mlpCV(foldIdx, data, fileNames, labels, varar
         
         for i = 1 : numel(hiddenNodes)
             [~, accuracy, mdl, scores, trainingTime, testTime] = mlpClassify(trainingData, trainingLabel,...
-                testData, testLabel, testFileNames, 'seed', seed, 'transferFunction', transferFunction,...
-                'hiddenNodes', hiddenNodes(i));
+                testData, testLabel, testFileNames, 'seed', seed, 'hiddenNodes', hiddenNodes(i));
             
             % exclude model for reducing file size
             mdl = [];

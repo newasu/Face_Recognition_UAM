@@ -1,4 +1,7 @@
 Face_Recognition_UAM > Exp2
 
 Objective:
-classify genders with standard methods.
+classification with standard methods:
+
+- Exp2_B: classify gender
+- Exp2_C: classify ethnicity

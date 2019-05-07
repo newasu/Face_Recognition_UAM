@@ -7,7 +7,7 @@ numb_run = 10;
 numb_cv = 5;
 
 % WELM's parameters
-hiddenNodes = 10:10:100;
+hiddenNodes = 100;
 
 % Save path
 saveFolderPath = {'Result', 'Exp2', 'Exp2_A'};
