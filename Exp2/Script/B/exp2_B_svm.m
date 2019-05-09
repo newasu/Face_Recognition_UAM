@@ -5,12 +5,11 @@ clear all
 % Settings
 numb_run = 1;
 numb_cv = 5;
-% training_sample_percent = 0.75; % percentages of training sample
-training_sample_percent = 0.25;
+training_sample_percent = 0.75; % percentages of training sample
 selected_pose_numb = 1; % number of image used each user
 
 % SVM's parameters
-c = power(10,-6:1:6);
+c = power(10,-4:1:4);
 kernelType = 'linear';  % linear, rbf
 libsvmKernelType = 4; % linear : 0, rbf : 2, precomputed : 4
 

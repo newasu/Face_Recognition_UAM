@@ -21,6 +21,6 @@ function [ trainingResult, testResult, testCorrectIdx ] = TestANNParams(...
     testResult = array2table({hiddenNodes accuracy scores mdl trainingTime testTime},...
         'VariableNames', {'hiddenNodes', 'accuracy', 'scores', 'model', 'trainingTime', 'testTime'});
     
-    testCorrectIdx = find(scores.labels==round(scores.predict_labels));
+    testCorrectIdx = find(scores.labels==scores.predict_labels);
 end
 

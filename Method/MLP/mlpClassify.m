@@ -17,11 +17,11 @@ function [predictY, accuracy, mdl, scores, trainingTime, testTime] = mlpClassify
 
     net = patternnet(hiddenNodes_percentages);
 %     net = feedforwardnet(hiddenNodes_percentages);
-%     net.trainParam.showWindow = false;
-%     SetRandomSeed(seed)
+    net.trainParam.showWindow = false;
+    SetRandomSeed(seed)
 
     tic
-    mdl = train(net, trainingDataX', new_trainingDataY');
+    mdl = train(net, trainingDataX', full(ind2vec(double(new_trainingDataY)')));
     trainingTime = toc;
     
     tic
@@ -29,7 +29,8 @@ function [predictY, accuracy, mdl, scores, trainingTime, testTime] = mlpClassify
     testTime = toc;
     
 %     Convert predictY back to actual label
-    predictY = class_name(round(predictY));
+    [~, predictY] = max(predictY, [], 2);
+    predictY = class_name(predictY);
     
     accuracy = (sum(predictY==testDataY)/numel(testDataY)) * 100;
     scores = table(testFileNames, testDataY, predictY, 'VariableNames', {'filenames' 'labels', 'predict_labels'});

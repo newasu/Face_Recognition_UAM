@@ -43,7 +43,8 @@ function [W, beta] = trainWELM_onevsall(X, T, W, regularizationC, balance, distF
         S = ones(1,numel(SI));
     end
     
-    T_onehot = cell2mat(arrayfun(@(x) convert_onehot(x,numel(SI)), T, 'UniformOutput', false));
+%     T_onehot = cell2mat(arrayfun(@(x) convert_onehot(x,numel(SI)), T, 'UniformOutput', false));
+    T_onehot = full(ind2vec(double(T)')');
     
     B = cell2mat(arrayfun(@(x) S(find(x==SI)), T, 'UniformOutput', false));
     H = repmat(B,1,size(H,2)).*H;

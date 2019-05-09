@@ -8,12 +8,12 @@ numb_cv = 5;
 training_sample_percent = 0.75; % percentages of training sample
 selected_pose_numb = 1; % number of image used each user
 
-% WELM's parameters
-hiddenNodes = 100;
+% MLP's parameters
+hiddenNodes = (power(2,[3:8])/2048)*100; % percentages of hidden nodes compare to #features
 
 % Save path
 saveFolderPath = {'Result', 'Exp2', 'Exp2_B'};
-filename = [saveFolderPath{end} '_welm'];
+filename = [saveFolderPath{end} '_mlp'];
 save_path = MakeChainFolder(saveFolderPath, 'target_path', pwd);
 save_path = [save_path '/' filename];
 
@@ -57,17 +57,13 @@ for random_seed = 1 : numb_run
     [ kFoldIdx, ~ ] = GetKFoldIndices( numb_cv, trainingDataY, random_seed );
     
     % Find optimal parameter
-%     [ foldLog, avgFoldLog ] = mlpCV(kFoldIdx, trainingDataX, trainingDataY, ...
-%         trainingFileNames, 'seed', random_seed, 'hiddenNodes', hiddenNodes);
+    [ foldLog, avgFoldLog ] = mlpCV(kFoldIdx, trainingDataX, trainingDataY, ...
+        trainingFileNames, 'seed', random_seed, 'hiddenNodes', hiddenNodes);
     
     % Test model
-%     [trainingResult, testResult, testCorrectIdx] = TestMLPParams(trainingDataX, ...
-%         trainingDataY, trainingFileNames, testDataX, testDataY, testFileNames, ...
-%         'hiddenNodes', table2array(avgFoldLog(1,1)), 'seed', random_seed);
-
     [trainingResult, testResult, testCorrectIdx] = TestMLPParams(trainingDataX, ...
         trainingDataY, trainingFileNames, testDataX, testDataY, testFileNames, ...
-        'hiddenNodes', 100, 'seed', random_seed);
+        'hiddenNodes', table2array(avgFoldLog(1,1)), 'seed', random_seed);
         
     log(random_seed,:) = {foldLog trainingResult testResult};
 end

@@ -40,9 +40,11 @@ function [W] = trainLDA_onevsall(X, T, balance, kernelType )
     
     X = kernel(X,X, kernelType);
     
-    T_onehot = cell2mat(arrayfun(@(x) convert_onehot(x,numel(SI)), T, 'UniformOutput', false));
+%     T_onehot = cell2mat(arrayfun(@(x) convert_onehot(x,numel(SI)), T, 'UniformOutput', false));
+    T_onehot = full(ind2vec(double(T)')');
+    
     W = pinv([ones(size(X,1),1) X]) * T_onehot;
-
+    
 end
 
 function xxx = kernel(xx,yy,kt)
