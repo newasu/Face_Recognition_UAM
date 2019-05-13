@@ -1,0 +1,8 @@
+Face_Recognition_UAM > Exp3
+
+Objective:
+classify task Is that same or different person:
+
+- Exp3_A: evaluate performance by tuning parameter in CV
+	- vary number of training sample
+	- vary combination rule

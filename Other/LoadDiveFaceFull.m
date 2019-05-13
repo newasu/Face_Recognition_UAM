@@ -2,9 +2,9 @@ function [raw_feature, label] = LoadDiveFaceFull(varargin)
 %LOADDIVEFACEFULL Summary of this function goes here
 %   Detailed explanation goes here
 
-    dataset_path = getAdditionalParam( 'dataset_path', varargin, pwd );
+    dataset_path = getAdditionalParam( 'dataset_path', varargin, [pwd '/Dataset/DiveFace_full/'] );
     
-    diveface_path = [dataset_path '/Dataset/DiveFace_full/'];
+    diveface_path = dataset_path;
     
     disp('Importing DiveFace..');
     

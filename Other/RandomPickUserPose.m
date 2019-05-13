@@ -4,7 +4,7 @@ function [selected_pose_index, unselected_pose_index] =...
 %   Detailed explanation goes here
 
     selected_pose_numb = getAdditionalParam('selected_pose_numb', varargin, 1);
-    random_seed = getAdditionalParam('random_seed', varargin, 1); % set to 999 for freely random
+    random_seed = getAdditionalParam('random_seed', varargin, 1); % set to 0 for freely random
     
     my_data_label = data_label;
     user_pose_numb = cellfun(@(x) numel(x), user_index, 'UniformOutput', false);
@@ -12,6 +12,9 @@ function [selected_pose_index, unselected_pose_index] =...
     id_index = find(strcmp(my_data_label.Properties.VariableNames, 'id'));
     my_data_label = [double(table2array(data_label(:,{'gender', 'ethnicity'}))) ...
         table2array(data_label(:,{'id', 'pose'}))];
+    
+    global my_random_seed
+    my_random_seed = random_seed;
     
 % Random pick user's pose
     random_index_data = cellfun(@(x) myRandom(x,random_seed), user_pose_numb, 'UniformOutput', false);
@@ -22,7 +25,7 @@ function [selected_pose_index, unselected_pose_index] =...
         temp_index = find(my_data_label(:, id_index) == user_id(i));
         random_selected_pose_index(temp_index(random_index_data{i})) = 1;
     end
-    clear temp_index 
+    clear temp_index
 
 % Seperate user's pose
     temp_index = cellfun(@(x) find(ismember(my_data_label(:, id_index), x)),...
@@ -45,11 +48,16 @@ function [selected_pose_index, unselected_pose_index] =...
     selected_pose_index = temp_selected_pose_index;
     unselected_pose_index = temp_unselected_pose_index;
     
+    clear global my_random_seed
+    
 end
 
 function rn = myRandom(elementNumb, seed)
-    SetRandomSeed(seed);
+    global my_random_seed
+    SetRandomSeed(my_random_seed);
+%     SetRandomSeed(seed);
     rn = randperm(elementNumb);
+    my_random_seed = my_random_seed + 1;
 end
 
 function rn = selectPoseNumber(user_pose, selection_numb, pose_number)

@@ -1,4 +1,4 @@
-% exp2 B find gender(Exp2_B) and ethnicity(Exp2_C) by MLP on full DiveFace
+% exp2 B find gender(Exp2_B) and ethnicity(Exp2_C) by Euclidean on full DiveFace
 
 clear all
 
@@ -8,12 +8,9 @@ numb_cv = 5;
 training_sample_percent = 0.75; % percentages of training sample
 selected_pose_numb = 1; % number of image used each user
 
-% MLP's parameters
-hiddenNodes = (power(2,[3:9])/2048)*100; % percentages of hidden nodes compare to #features
-
 % Save path
 saveFolderPath = {'Result', 'Exp2', 'Exp2_C'};
-filename = [saveFolderPath{end} '_mlp'];
+filename = [saveFolderPath{end} '_dist'];
 save_path = MakeChainFolder(saveFolderPath, 'target_path', pwd);
 save_path = [save_path '/' filename];
 
@@ -53,23 +50,54 @@ for random_seed = 1 : numb_run
     testFileNames = diveface_label.filename(testData_index);
     test_data_id = diveface_label.data_id(testData_index);
     
-    % Genarate k-fold indices
-    [ kFoldIdx, ~ ] = GetKFoldIndices( numb_cv, trainingDataY, random_seed );
+    % Class labels
+    class_name = categorical(categories(trainingDataY));
+
+    % Predict
+    tic
+    dist_matrix = pdist2(testDataX, trainingDataX,'euclidean');
+    trainingTime = toc;
     
-    % Find optimal parameter
-    [ foldLog, avgFoldLog ] = mlpCV(kFoldIdx, trainingDataX, trainingDataY, ...
-        trainingFileNames, 'seed', random_seed, 'hiddenNodes', hiddenNodes);
+    % Consider by nearest user
+    tic;
+    [~, predict_score] = min(dist_matrix, [], 2);
+    testTime = toc;
+    predictY = trainingDataY(predict_score);
+    accuracy = sum(predictY==testDataY)/numel(testDataY);
+    % Save max method
+    scores = table(testFileNames, testDataY, predictY,...
+        'VariableNames', {'filenames' 'labels', 'predict_labels'});
+    testResult = array2table({  accuracy scores training_data_id trainingTime testTime},...
+        'VariableNames', {'accuracy', 'scores', 'model', 'trainingTime', 'testTime'});
+    log_near(random_seed, :) = {[] [] testResult};
     
-    % Test model
-    [trainingResult, testResult, testCorrectIdx] = TestMLPParams(trainingDataX, ...
-        trainingDataY, trainingFileNames, testDataX, testDataY, testFileNames, ...
-        'hiddenNodes', table2array(avgFoldLog(1,1)), 'seed', random_seed);
+    % Consider by mean
+    predict_score = [];
+    tic;
+    for i = 1 : numel(class_name)
+        predict_score(:,i) = mean(dist_matrix(:, (trainingDataY == class_name(i))), 2);
+    end
+    trainingTime = trainingTime + toc;
+    tic;
+    [~, predict_score] = min(predict_score, [], 2);
+    testTime = toc;
+    predictY = class_name(predict_score);
+	accuracy(random_seed) = sum(predictY==testDataY)/numel(testDataY);
+    % Save mean method
+    scores = table(testFileNames, testDataY, predictY,...
+        'VariableNames', {'filenames' 'labels', 'predict_labels'});
+    testResult = array2table({  accuracy scores training_data_id trainingTime testTime},...
+        'VariableNames', {'accuracy', 'scores', 'model', 'trainingTime', 'testTime'});
+    log_mean(random_seed, :) = {[] [] testResult};
         
-    log(random_seed,:) = {foldLog trainingResult testResult};
 end
 
-log = cell2table(log, 'variablenames', {'foldLog' 'trainingResult' 'testResult'});
-eval([filename ' = log;']);
-save(save_path, filename,'-v7.3');
+log_near = cell2table(log_near, 'variablenames', {'foldLog' 'trainingResult' 'testResult'});
+eval([filename '_near = log_near;']);
+save([save_path '_near'], [filename '_near'],'-v7.3');
+
+log_mean = cell2table(log_mean, 'variablenames', {'foldLog' 'trainingResult' 'testResult'});
+eval([filename '_mean = log_mean;']);
+save([save_path '_mean'], [filename '_mean'],'-v7.3');
 
 

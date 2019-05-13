@@ -26,7 +26,8 @@ function [predictY, accuracy, mdl, scores, trainingTime, testTime] = welmClassif
     predictY = class_name(round(predictY));
     
     accuracy = (sum(predictY==testDataY)/numel(testDataY)) * 100;
-    scores = table(testFileNames, testDataY, predictY, 'VariableNames', {'filenames' 'labels', 'predict_labels'});
+    scores = table(testFileNames, testDataY, predictY, ...
+        'VariableNames', {'filenames' 'labels', 'predict_labels'});
     
     mdl = table(W_code, beta);
 end

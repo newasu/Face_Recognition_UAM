@@ -17,7 +17,7 @@ function [predictY, accuracy, mdl, scores, trainingTime, testTime] = mlpClassify
 
     net = patternnet(hiddenNodes_percentages);
 %     net = feedforwardnet(hiddenNodes_percentages);
-    net.trainParam.showWindow = false;
+%     net.trainParam.showWindow = false;
     SetRandomSeed(seed)
 
     tic
