@@ -1,4 +1,4 @@
-function [predictY, accuracy, mdl, scores, trainingTime, testTime] = welmClassify(...
+function [predictY, score, mdl, label_mat, trainingTime, testTime] = welmClassify(...
     trainingDataX, trainingDataY, trainingCode, testDataX, testDataY, testFileNames, varargin)
 %WELMClassify Summary of this function goes here
 %   Detailed explanation goes here
@@ -25,15 +25,20 @@ function [predictY, accuracy, mdl, scores, trainingTime, testTime] = welmClassif
 %     Convert predictY back to actual label
     predictY = class_name(round(predictY));
     
-    accuracy = (sum(predictY==testDataY)/numel(testDataY)) * 100;
-    scores = table(testFileNames, testDataY, predictY, ...
+    [~,score,~] = my_confusion.getMatrix(double(testDataY),double(predictY),0);
+    label_mat = table(testFileNames, testDataY, predictY, ...
         'VariableNames', {'filenames' 'labels', 'predict_labels'});
     
     mdl = table(W_code, beta);
 end
 
 function [W, beta] = trainWELM_onevsall(X, T, W, regularizationC, balance, distFunction )
-    [ H ] = simKernel(X, W, distFunction);
+%     [ H ] = simKernel(X, W, distFunction);
+    if gpuDeviceCount > 0 
+        [ H ] = simKernel_gpu(X, W, distFunction);
+    else
+        [ H ] = simKernel(X, W, distFunction);
+	end
     
     if balance == 1
         [S,SI] = hist(T,unique(T));
@@ -68,22 +73,66 @@ function [ W, W_code ] = initHidden( h , X , seed, code )
 end
 
 function [ HH ] = simKernel(XX, WW, distFunc)
-    if strcmp(distFunc, 'cosine')
-        HH = pdist2(XX,WW,'cosine');
-    elseif strcmp(distFunc, 'jaccard')
-        HH = pdist2(XX,WW,'jaccard');
-    elseif strcmp(distFunc, 'squaredeuclidean')
-        HH = pdist2(XX,WW,'squaredeuclidean');
-    elseif strcmp(distFunc, 'linear')
+	if strcmp(distFunc, 'cosine') || strcmp(distFunc, 'jaccard') || ...
+            strcmp(distFunc, 'squaredeuclidean') || strcmp(distFunc, 'euclidean') % distance
+        HH = pdist2(XX, WW, distFunc);
+    else % linear
         HH = XX*WW';
-    else
-        HH = pdist2(XX,WW,'euclidean');
     end
-    HH = double(HH);
+    
 end
 
-function [predictY] = testWELM(Xtest, W, beta, distFunction )
-    [ H ] = simKernel(Xtest, W, distFunction);
+function [ HH ] = simKernel_gpu(XX, WW, distFunc)
+	if strcmp(distFunc, 'cosine') || strcmp(distFunc, 'jaccard') || ...
+            strcmp(distFunc, 'squaredeuclidean') || strcmp(distFunc, 'euclidean') % distance
+%         HH = pdist2(gpuArray(XX), gpuArray(WW), distFunc);
+        
+        % divide data to calculate distance for avoiding over memory using
+        my_gpuDevice = gpuDevice(1);
+        ii_step = my_gpuDevice.MaxGridSize(2);
+        jj_step = my_gpuDevice.MaxGridSize(3);
+        ii_round = ceil(size(XX,1)/ii_step);
+        jj_round = ceil(size(WW,1)/jj_step);
+        HH = [];
+        for ii = 1 : ii_round
+            ii_s_idx = ((ii-1) * ii_step) + 1;
+            if ii == ii_round
+                ii_e_idx = ((ii-1) * ii_step) + mod(size(XX,1),ii_step);
+            else
+                ii_e_idx = ii * ii_step;
+            end
+            
+            for jj = 1 : jj_round
+                jj_s_idx = ((jj-1) * jj_step) + 1;
+                if jj == jj_round
+                    jj_e_idx = ((jj-1) * jj_step) + mod(size(WW,1),jj_step);
+                else
+                    jj_e_idx = jj * jj_step;
+                end
+                
+                temp_XX = gpuArray(XX(ii_s_idx:ii_e_idx, :));
+                temp_WW = gpuArray(WW(jj_s_idx:jj_e_idx, :));
+                
+                HH(ii_s_idx:ii_e_idx, jj_s_idx:jj_e_idx) ...
+                    = gather(pdist2(temp_XX, temp_WW, distFunc));
+                
+                clear temp_XX temp_WW
+            end
+        end
+        
+    else % linear
+        HH = gather(gpuArray(XX) * gpuArray(WW)');
+    end
+    
+end
+
+function [predictY] = testWELM(Xtest, WW, beta, distFunction )
+    if gpuDeviceCount > 0 
+        [ H ] = simKernel_gpu(Xtest, WW, distFunction);
+    else
+        [ H ] = simKernel(Xtest, WW, distFunction);
+	end
+
     Hbeta = H*beta;
     [~, predictY] = max(Hbeta,[],2);
 end

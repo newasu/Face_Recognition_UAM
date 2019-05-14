@@ -46,7 +46,7 @@ function [ foldLog, avgFoldLog ] = pelmCV(foldIdx, data_0, data_1, data_2, label
                 'regularizationC', paramAll(2,i));
             
             % exclude model for reducing file size
-            mdl = [];
+%             mdl = [];
             
             foldLog = [foldLog; paramAll(1,i) paramAll(2,i) fold score.F1_score {label_mat} {mdl} trainingTime testTime];
 
@@ -69,6 +69,6 @@ function [ foldLog, avgFoldLog ] = pelmCV(foldIdx, data_0, data_1, data_2, label
     avgFoldLog = array2table(sortrows(avgFoldLog,[-(numbCVParam+1) 1]), 'VariableNames', {'hiddenNodes', 'regC', 'score', 'trainingTime', 'testTime'});
     
     % exclude model for reducing file size
-    foldLog.model = [];
+%     foldLog.model = [];
 end
 

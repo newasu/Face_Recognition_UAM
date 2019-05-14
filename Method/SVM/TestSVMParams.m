@@ -25,20 +25,20 @@ function [ trainingResult, testResult, testCorrectIdx ] = TestSVMParams(...
     % test training datas
     svmCommand = buildSVMString('training', 'training', {'s' 't' paramName{:}}, [svmType libsvmKernelType table2array(optParam)]);
     eval(svmCommand);
-    trainingResult = array2table({table2array(optParam) accuracy scores mdl trainingTime testTime},...
-        'VariableNames', {paramName{:}, 'accuracy', 'scores', 'model', 'trainingTime', 'testTime'});
+    trainingResult = array2table({table2array(optParam) score.F1_score label_mat mdl trainingTime testTime},...
+        'VariableNames', {paramName{:}, 'score', 'label_mat', 'model', 'trainingTime', 'testTime'});
     
     % test test data
     svmCommand = buildSVMString('training', 'test', {'s' 't' paramName{:}}, [svmType libsvmKernelType table2array(optParam)]);
     eval(svmCommand);
-    testResult = array2table({table2array(optParam) accuracy scores mdl trainingTime testTime},...
-        'VariableNames', {paramName{:}, 'accuracy', 'scores', 'model', 'trainingTime', 'testTime'});
+    testResult = array2table({table2array(optParam) score.F1_score label_mat mdl trainingTime testTime},...
+        'VariableNames', {paramName{:}, 'score', 'label_mat', 'model', 'trainingTime', 'testTime'});
     
     testCorrectIdx = find(scores.labels==scores.predict_labels);
 end
 
 function svmCommand = buildSVMString(trainingStr, testStr, svmParamName, svmParam)
-    svmCommand = ['[~, accuracy, mdl, scores, trainingTime, testTime] = libsvmClassify('...
+    svmCommand = ['[~, score, mdl, label_mat, trainingTime, testTime] = libsvmClassify('...
         selectDataUsed(trainingStr) selectDataUsed(testStr) selectFileNameUsed(testStr)];
     
     for i = 1 : numel(svmParamName)

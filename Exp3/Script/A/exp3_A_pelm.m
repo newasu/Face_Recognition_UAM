@@ -5,7 +5,7 @@ clear all
 % Settings
 numb_run = 1;
 numb_cv = 2;
-training_sample_percent = 0.01; % percentages of training sample
+training_sample_percent = 0.001; % percentages of training sample
 selected_pose_numb = 3; % number of image used each user
 number_comparison = 1;
 do_balance_class = 1;

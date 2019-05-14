@@ -47,8 +47,13 @@ function [ W, W_code ] = initHidden( h , X , seed, code )
 end
 
 function [W, beta] = trainWELM_onevsall(X_1, X_2, T, W, regularizationC, balance, distFunction, rule )
-    [ H_1 ] = simKernel(X_1, W, distFunction);
-    [ H_2 ] = simKernel(X_2, W, distFunction);
+	if gpuDeviceCount > 0 
+        [ H_1 ] = simKernel_gpu(X_1, W, distFunction);
+        [ H_2 ] = simKernel_gpu(X_2, W, distFunction);
+    else
+        [ H_1 ] = simKernel(X_1, W, distFunction);
+        [ H_2 ] = simKernel(X_2, W, distFunction);
+	end
     
     [ H ] = combineRule(H_1, H_2, rule);
     
@@ -70,26 +75,58 @@ function [W, beta] = trainWELM_onevsall(X_1, X_2, T, W, regularizationC, balance
 end
 
 function [ HH ] = simKernel(XX, WW, distFunc)
-	if gpuDeviceCount > 0 
-        XX = gpuArray(XX);
-        WW = gpuArray(WW);
-	end
-    
-    if strcmp(distFunc, 'cosine')
-        HH = pdist2(XX,WW,'cosine');
-    elseif strcmp(distFunc, 'jaccard')
-        HH = pdist2(XX,WW,'jaccard');
-    elseif strcmp(distFunc, 'squaredeuclidean')
-        HH = pdist2(XX,WW,'squaredeuclidean');
-    elseif strcmp(distFunc, 'linear')
+	if strcmp(distFunc, 'cosine') || strcmp(distFunc, 'jaccard') || ...
+            strcmp(distFunc, 'squaredeuclidean') || strcmp(distFunc, 'euclidean') % distance
+        HH = pdist2(XX, WW, distFunc);
+    else % linear
         HH = XX*WW';
-    else
-        HH = pdist2(XX,WW,'euclidean');
     end
     
-    if gpuDeviceCount > 0 
-        HH = gather(HH);
+end
+
+function [ HH ] = simKernel_gpu(XX, WW, distFunc)
+	if strcmp(distFunc, 'cosine') || strcmp(distFunc, 'jaccard') || ...
+            strcmp(distFunc, 'squaredeuclidean') || strcmp(distFunc, 'euclidean') % distance
+%         HH = pdist2(XX, WW, distFunc);
+%         HH = pdist2(gpuArray(XX), gpuArray(WW), distFunc);
+        
+        % divide data to calculate distance for avoiding over memory using
+        my_gpuDevice = gpuDevice(1);
+        ii_step = my_gpuDevice.MaxGridSize(2);
+        jj_step = my_gpuDevice.MaxGridSize(3);
+        ii_round = ceil(size(XX,1)/ii_step);
+        jj_round = ceil(size(WW,1)/jj_step);
+        HH = [];
+        for ii = 1 : ii_round
+            ii_s_idx = ((ii-1) * ii_step) + 1;
+            if ii == ii_round
+                ii_e_idx = ((ii-1) * ii_step) + mod(size(XX,1),ii_step);
+            else
+                ii_e_idx = ii * ii_step;
+            end
+            
+            for jj = 1 : jj_round
+                jj_s_idx = ((jj-1) * jj_step) + 1;
+                if jj == jj_round
+                    jj_e_idx = ((jj-1) * jj_step) + mod(size(WW,1),jj_step);
+                else
+                    jj_e_idx = jj * jj_step;
+                end
+                
+                temp_XX = gpuArray(XX(ii_s_idx:ii_e_idx, :));
+                temp_WW = gpuArray(WW(jj_s_idx:jj_e_idx, :));
+                
+                HH(ii_s_idx:ii_e_idx, jj_s_idx:jj_e_idx) ...
+                    = gather(pdist2(temp_XX, temp_WW, distFunc));
+                
+                clear temp_XX temp_WW
+            end
+        end
+        
+    else % linear
+        HH = gather(gpuArray(XX) * gpuArray(WW)');
     end
+    
 end
 
 function [ HH ] = combineRule(XX_1, XX_2, cr)
@@ -111,9 +148,15 @@ function oh = convert_onehot(c,nc)
     oh(c) = 1;
 end
 
-function [predictY] = testWELM(Xtest_1, Xtest_2, W, beta, distFunction, rule)
-    [ H_1 ] = simKernel(Xtest_1, W, distFunction);
-    [ H_2 ] = simKernel(Xtest_2, W, distFunction);
+function [predictY] = testWELM(Xtest_1, Xtest_2, WW, beta, distFunction, rule)
+    if gpuDeviceCount > 0 
+        [ H_1 ] = simKernel_gpu(Xtest_1, WW, distFunction);
+        [ H_2 ] = simKernel_gpu(Xtest_2, WW, distFunction);
+    else
+        [ H_1 ] = simKernel(Xtest_1, WW, distFunction);
+        [ H_2 ] = simKernel(Xtest_2, WW, distFunction);
+	end
+    
     [ H ] = combineRule(H_1, H_2, rule);
     Hbeta = H*beta;
     [~, predictY] = max(Hbeta,[],2);

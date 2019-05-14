@@ -1,4 +1,4 @@
-% exp2 B find gender(Exp2_B) and ethnicity(Exp2_C) by WELM on full DiveFace ResNet
+% exp2 E find ethnicity by WELM on full DiveFace VGG
 
 clear all
 
@@ -14,13 +14,13 @@ regularizationC = power(10,-4:1:4);
 distFunction = 'euclidean';
 
 % Save path
-saveFolderPath = {'Result', 'Exp2', 'Exp2_B'};
+saveFolderPath = {'Result', 'Exp2', 'Exp2_E'};
 filename = [saveFolderPath{end} '_welm'];
 save_path = MakeChainFolder(saveFolderPath, 'target_path', pwd);
 save_path = [save_path '/' filename];
 
 % %Load data
-[diveface_feature, diveface_label] = LoadDiveFaceFull('network_type', 'ResNet');
+[diveface_feature, diveface_label] = LoadDiveFaceFull('network_type', 'VGG');
 
 for random_seed = 1 : numb_run
     % Split dataset
@@ -40,8 +40,8 @@ for random_seed = 1 : numb_run
     trainingData_index = [trainingData_index{:}];
     trainingData_index = trainingData_index(:);
     trainingDataX = diveface_feature(trainingData_index,:);
-    trainingDataY = diveface_label.gender(trainingData_index);
-%     trainingDataY = diveface_label.ethnicity(trainingData_index);
+%     trainingDataY = diveface_label.gender(trainingData_index);
+    trainingDataY = diveface_label.ethnicity(trainingData_index);
     trainingFileNames = diveface_label.filename(trainingData_index);
     training_data_id = diveface_label.data_id(trainingData_index);
 
@@ -50,8 +50,8 @@ for random_seed = 1 : numb_run
     testData_index = [testData_index{:}];
     testData_index = testData_index(:);
     testDataX = diveface_feature(testData_index,:);
-    testDataY = diveface_label.gender(testData_index);
-%     testDataY = diveface_label.ethnicity(testData_index);
+%     testDataY = diveface_label.gender(testData_index);
+    testDataY = diveface_label.ethnicity(testData_index);
     testFileNames = diveface_label.filename(testData_index);
     test_data_id = diveface_label.data_id(testData_index);
     

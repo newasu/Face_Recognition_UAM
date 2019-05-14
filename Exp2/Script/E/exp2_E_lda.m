@@ -1,5 +1,4 @@
-% exp2 B find gender(Exp2_B) and ethnicity(Exp2_C) by WELM on full DiveFace ResNet
-
+% exp2 E find ethnicity by LDA on full DiveFace VGG
 clear all
 
 % Settings
@@ -8,19 +7,14 @@ numb_cv = 5;
 training_sample_percent = 0.75; % percentages of training sample
 selected_pose_numb = 1; % number of image used each user
 
-% WELM's parameters
-hiddenNodes = 10:10:100;
-regularizationC = power(10,-4:1:4);
-distFunction = 'euclidean';
-
 % Save path
-saveFolderPath = {'Result', 'Exp2', 'Exp2_B'};
-filename = [saveFolderPath{end} '_welm'];
+saveFolderPath = {'Result', 'Exp2', 'Exp2_E'};
+filename = [saveFolderPath{end} '_lda'];
 save_path = MakeChainFolder(saveFolderPath, 'target_path', pwd);
 save_path = [save_path '/' filename];
 
 % %Load data
-[diveface_feature, diveface_label] = LoadDiveFaceFull('network_type', 'ResNet');
+[diveface_feature, diveface_label] = LoadDiveFaceFull('network_type', 'VGG');
 
 for random_seed = 1 : numb_run
     % Split dataset
@@ -40,8 +34,8 @@ for random_seed = 1 : numb_run
     trainingData_index = [trainingData_index{:}];
     trainingData_index = trainingData_index(:);
     trainingDataX = diveface_feature(trainingData_index,:);
-    trainingDataY = diveface_label.gender(trainingData_index);
-%     trainingDataY = diveface_label.ethnicity(trainingData_index);
+%     trainingDataY = diveface_label.gender(trainingData_index);
+    trainingDataY = diveface_label.ethnicity(trainingData_index);
     trainingFileNames = diveface_label.filename(trainingData_index);
     training_data_id = diveface_label.data_id(trainingData_index);
 
@@ -50,24 +44,19 @@ for random_seed = 1 : numb_run
     testData_index = [testData_index{:}];
     testData_index = testData_index(:);
     testDataX = diveface_feature(testData_index,:);
-    testDataY = diveface_label.gender(testData_index);
-%     testDataY = diveface_label.ethnicity(testData_index);
+%     testDataY = diveface_label.gender(testData_index);
+    testDataY = diveface_label.ethnicity(testData_index);
     testFileNames = diveface_label.filename(testData_index);
     test_data_id = diveface_label.data_id(testData_index);
     
-    % Genarate k-fold indices
-    [ kFoldIdx, ~ ] = GetKFoldIndices( numb_cv, trainingDataY, random_seed );
-
     % Find optimal parameter
-    [ foldLog, avgFoldLog ] = welmCV(kFoldIdx, trainingDataX, trainingDataY, ...
-        trainingFileNames, training_data_id, 'seed', random_seed, 'hiddenNodes', hiddenNodes, ...
-        'regularizationC', regularizationC, 'distFunction', distFunction);
+    [ foldLog, avgFoldLog ] = ldaCV( trainingDataX, trainingDataY, trainingFileNames);
     
     % Test model
-    [trainingResult, testResult, testCorrectIdx] = TestWELMParams(trainingDataX, ...
-        trainingDataY, trainingFileNames, training_data_id, testDataX, testDataY, testFileNames, ...
-        'hiddenNodes', table2array(avgFoldLog(1,1)), 'regularizationC',  ...
-        table2array(avgFoldLog(1,2)), 'seed', random_seed, 'distFunction', distFunction);
+    [ trainingResult, testResult, testCorrectIdx ] = TestLDAParams(...
+        trainingDataX, trainingDataY, trainingFileNames,...
+        testDataX, testDataY, testFileNames, 'kernelType', 'linear');
+    
         
     log(random_seed,:) = {foldLog trainingResult testResult};
 end

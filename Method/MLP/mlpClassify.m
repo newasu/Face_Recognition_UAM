@@ -1,4 +1,4 @@
-function [predictY, accuracy, mdl, scores, trainingTime, testTime] = mlpClassify(...
+function [predictY, score, mdl, label_mat, trainingTime, testTime] = mlpClassify(...
     trainingDataX, trainingDataY, testDataX, testDataY, testFileNames, varargin)
 %MLPCLASSIFY Summary of this function goes here
 %   Detailed explanation goes here
@@ -17,22 +17,24 @@ function [predictY, accuracy, mdl, scores, trainingTime, testTime] = mlpClassify
 
     net = patternnet(hiddenNodes_percentages);
 %     net = feedforwardnet(hiddenNodes_percentages);
-%     net.trainParam.showWindow = false;
+    net.trainParam.showWindow = false;
     SetRandomSeed(seed)
 
     tic
-    mdl = train(net, trainingDataX', full(ind2vec(double(new_trainingDataY)')));
+    mdl = train(net, trainingDataX', ...
+    	full(ind2vec(double(new_trainingDataY)')), 'useGPU','yes');
     trainingTime = toc;
     
     tic
-    predictY = mdl(testDataX')';
+    predictY = mdl(testDataX', 'useGPU','yes')';
     testTime = toc;
     
 %     Convert predictY back to actual label
     [~, predictY] = max(predictY, [], 2);
     predictY = class_name(predictY);
     
-    accuracy = (sum(predictY==testDataY)/numel(testDataY)) * 100;
-    scores = table(testFileNames, testDataY, predictY, 'VariableNames', {'filenames' 'labels', 'predict_labels'});
+%     score = (sum(predictY==testDataY)/numel(testDataY)) * 100;
+    [~,score,~] = my_confusion.getMatrix(double(testDataY),double(predictY),0);
+    label_mat = table(testFileNames, testDataY, predictY, 'VariableNames', {'filenames' 'labels', 'predict_labels'});
 end
 

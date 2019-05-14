@@ -2,14 +2,16 @@ function [raw_feature, label] = LoadDiveFaceFull(varargin)
 %LOADDIVEFACEFULL Summary of this function goes here
 %   Detailed explanation goes here
 
-    dataset_path = getAdditionalParam( 'dataset_path', varargin, [pwd '/Dataset/DiveFace_full/'] );
+    dataset_path = getAdditionalParam( 'dataset_path', varargin, [pwd '/Dataset/DiveFace'] );
+    network_type = getAdditionalParam( 'network_type', varargin, 'ResNet' ); % ResNet VGG
     
-    diveface_path = dataset_path;
+    diveface_path = [dataset_path '_' network_type '/'];
     
+    disp(['Dataset path: ' diveface_path]);
     disp('Importing DiveFace..');
     
     %Each feature vector is composed by 2048 featutes
-    raw_feature = csvread([diveface_path 'embeddings_full_dataset.csv']);
+    raw_feature = csvread([diveface_path 'embeddings_full_dataset_' network_type '.csv']);
 
     %column 1= Gender (0 Male, 1 Female), column 2= Ethnicity (0 Black, 1 Asian, 2 Caucasian) column 3= ID
     raw_label = csvread([diveface_path 'attributes_full_dataset.csv']); 

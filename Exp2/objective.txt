@@ -3,5 +3,7 @@ Face_Recognition_UAM > Exp2
 Objective:
 classification with standard methods:
 
-- Exp2_B: classify gender
-- Exp2_C: classify ethnicity
+- Exp2_B: classify gender on DiveFace_ResNet
+- Exp2_C: classify ethnicity on DiveFace_ResNet
+- Exp2_D: classify gender on DiveFace_VGG
+- Exp2_E: classify ethnicity on DiveFace_VGG

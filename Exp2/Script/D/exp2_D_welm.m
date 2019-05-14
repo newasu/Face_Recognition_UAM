@@ -1,4 +1,4 @@
-% exp2 B find gender(Exp2_B) and ethnicity(Exp2_C) by WELM on full DiveFace ResNet
+% exp2 D find gender by WELM on full DiveFace VGG
 
 clear all
 
@@ -14,13 +14,13 @@ regularizationC = power(10,-4:1:4);
 distFunction = 'euclidean';
 
 % Save path
-saveFolderPath = {'Result', 'Exp2', 'Exp2_B'};
+saveFolderPath = {'Result', 'Exp2', 'Exp2_D'};
 filename = [saveFolderPath{end} '_welm'];
 save_path = MakeChainFolder(saveFolderPath, 'target_path', pwd);
 save_path = [save_path '/' filename];
 
 % %Load data
-[diveface_feature, diveface_label] = LoadDiveFaceFull('network_type', 'ResNet');
+[diveface_feature, diveface_label] = LoadDiveFaceFull('network_type', 'VGG');
 
 for random_seed = 1 : numb_run
     % Split dataset

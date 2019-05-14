@@ -1,4 +1,4 @@
-function [predictY, accuracy, mdl, scores, trainingTime, testTime] = libsvmClassify(...
+function [predictY, score, mdl, label_mat, trainingTime, testTime] = libsvmClassify(...
     trainingDataX, trainingDataY, testDataX, testDataY, testFileNames, varargin)
 %LIBSVMCLASSIFY Summary of this function goes here
 %   Detailed explanation goes here
@@ -27,7 +27,7 @@ function [predictY, accuracy, mdl, scores, trainingTime, testTime] = libsvmClass
     trainingTime = toc;
     
     tic
-    [predictY, accuracy, prob_values] = svmpredict(double(testDataY), testingKernelDataX, mdl);
+    [predictY, ~, prob_values] = svmpredict(double(testDataY), testingKernelDataX, mdl);
     testTime = toc;
 %     The function 'svmpredict' has three outputs. The first one,
 %     predictd_label, is a vector of predicted labels. The second output,
@@ -43,8 +43,8 @@ function [predictY, accuracy, mdl, scores, trainingTime, testTime] = libsvmClass
     %     Convert predictY back to actual label
     predictY = class_name(round(predictY));
     
-    accuracy = accuracy(1);
-    scores = table(testFileNames, testDataY, predictY, prob_values,...
+    [~,score,~] = my_confusion.getMatrix(double(testDataY),double(predictY),0);
+    label_mat = table(testFileNames, testDataY, predictY, prob_values,...
         'VariableNames', {'filenames' 'labels', 'predict_labels', 'SVM_scores'});
 %     [CM, GORDER] = confusionmat(testDataY,predictY);
     

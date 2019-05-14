@@ -56,14 +56,14 @@ function [ foldLog, avgFoldLog ] = svmCV(foldIdx, cvParam, cvParamName,...
             end
             
             if numel(cvParamName) == 1
-                [~, accuracy, mdl, scores, trainingTime, testTime] = libsvmClassify(trainingKernel, trainingLabel,...
+                [~, score, mdl, label_mat, trainingTime, testTime] = libsvmClassify(trainingKernel, trainingLabel,...
                     testKernel, testLabel, testFileNames, 's', svmType, 't', libsvmKernelType, cvParamName{1}, paramAll(1,i));
             else
-                [~, accuracy, mdl, scores, trainingTime, testTime] = libsvmClassify(trainingKernel, trainingLabel,...
+                [~, score, mdl, label_mat, trainingTime, testTime] = libsvmClassify(trainingKernel, trainingLabel,...
                     testKernel, testLabel, testFileNames, 's', svmType, 't', libsvmKernelType, cvParamName{1}, paramAll(1,i), cvParamName{2}, paramAll(2,i));
             end
             
-            foldLog = [foldLog; num2cell(paramAll(:,i)') fold accuracy {scores} {mdl} trainingTime testTime];
+            foldLog = [foldLog; num2cell(paramAll(:,i)') fold score.F1_score {label_mat} {mdl} trainingTime testTime];
 
             % Count Progress Bar
             countingRound = countingRound + 1;
@@ -75,13 +75,13 @@ function [ foldLog, avgFoldLog ] = svmCV(foldIdx, cvParam, cvParamName,...
     
     numbCVParam = numel(cvParamName);
     foldLog = sortrows(foldLog,[(1:numbCVParam) (numbCVParam+1)]);
-    foldLog = array2table(foldLog, 'VariableNames', {cvParamName{:}, 'fold', 'accuracy', 'scores', 'model', 'trainingTime', 'testTime'});
+    foldLog = array2table(foldLog, 'VariableNames', {cvParamName{:}, 'fold', 'score', 'label_mat', 'model', 'trainingTime', 'testTime'});
     
     % Average 5 folds into 1
     avgFoldLog = cell2mat(table2array(foldLog(:, [(1:numel(cvParamName)) 2+numbCVParam 5+numbCVParam 6+numbCVParam ])));
     avgFoldLog = reshape(avgFoldLog',[(size(avgFoldLog,2)), noFold, (size(avgFoldLog,1)/noFold)]);
     avgFoldLog = sum(avgFoldLog,2)/noFold;
     avgFoldLog = reshape(avgFoldLog,[size(avgFoldLog,1) size(avgFoldLog,3)])';
-    avgFoldLog = array2table(sortrows(avgFoldLog,-(numbCVParam+1)), 'VariableNames', {cvParamName{:}, 'accuracy', 'trainingTime', 'testTime'});
+    avgFoldLog = array2table(sortrows(avgFoldLog,-(numbCVParam+1)), 'VariableNames', {cvParamName{:}, 'score', 'trainingTime', 'testTime'});
 end
 
