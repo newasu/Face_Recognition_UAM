@@ -10,7 +10,7 @@ function my_path = MakeChainFolder(folder_name, varargin)
     my_path = target_path;
     % Make folder if not exist
     for i = 1 : numel(folder_name)
-        my_path = [my_path '/' folder_name{i}];
+        my_path = [my_path filesep folder_name{i}];
         if ~exist(my_path,'dir')
             mkdir(my_path);
             disp(['Make folder: ' my_path]);

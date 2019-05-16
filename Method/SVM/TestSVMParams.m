@@ -34,7 +34,7 @@ function [ trainingResult, testResult, testCorrectIdx ] = TestSVMParams(...
     testResult = array2table({table2array(optParam) score.F1_score label_mat mdl trainingTime testTime},...
         'VariableNames', {paramName{:}, 'score', 'label_mat', 'model', 'trainingTime', 'testTime'});
     
-    testCorrectIdx = find(scores.labels==scores.predict_labels);
+    testCorrectIdx = find(label_mat.labels==label_mat.predict_labels);
 end
 
 function svmCommand = buildSVMString(trainingStr, testStr, svmParamName, svmParam)

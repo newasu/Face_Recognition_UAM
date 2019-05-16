@@ -1,7 +1,7 @@
 Face_Recognition_UAM > Exp3
 
 Objective:
-classify task Is that same or different person:
+classify task Is that same or different person by PELM1:
 
 - Exp3_A: evaluate performance by tuning parameter in CV
 	- vary number of training sample

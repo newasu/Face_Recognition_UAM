@@ -2,10 +2,16 @@ function [raw_feature, label] = LoadDiveFaceFull(varargin)
 %LOADDIVEFACEFULL Summary of this function goes here
 %   Detailed explanation goes here
 
-    dataset_path = getAdditionalParam( 'dataset_path', varargin, [pwd '/Dataset/DiveFace'] );
+    % set dafault path if not specific
+    default_data_store_path = pwd;
+    idcs   = strfind(pwd,filesep);
+    default_data_store_path = [default_data_store_path(1:idcs(end)-1) ...
+        filesep 'Face_Recognition_UAM_data_store' filesep 'Dataset' filesep 'DiveFace'];
+    
+    dataset_path = getAdditionalParam( 'dataset_path', varargin, default_data_store_path );
     network_type = getAdditionalParam( 'network_type', varargin, 'ResNet' ); % ResNet VGG
     
-    diveface_path = [dataset_path '_' network_type '/'];
+    diveface_path = [dataset_path '_' network_type filesep];
     
     disp(['Dataset path: ' diveface_path]);
     disp('Importing DiveFace..');

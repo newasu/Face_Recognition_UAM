@@ -1,7 +1,7 @@
-function [predictY, score, mdl, label_mat, trainingTime, testTime] = pelm1Classify(...
-    trainingDataX_1, trainingDataX_2, trainingDataY, trainingDataU, trainingCode,...
+function [predictY, score, mdl, label_mat, trainingTime, testTime] = pelm2Classify(...
+    trainingDataX_1, trainingDataX_2, trainingDataY, trainingCode, ...
     testDataX_1, testDataX_2, testDataY, testFileNames, varargin)
-%PELM1CLASSIFY Summary of this function goes here
+%PELM2CLASSIFY Summary of this function goes here
 %   Detailed explanation goes here
 
     distFunction = getAdditionalParam( 'distFunction', varargin, 'cosine' );  % euclidean cosine
@@ -10,19 +10,23 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = pelm1Classi
     hiddenNodes = getAdditionalParam( 'hiddenNodes', varargin, [100] );
     combine_rule = getAdditionalParam( 'combine_rule', varargin, 'sum' ); % sum minus multiply distance mean
     seed = getAdditionalParam( 'seed', varargin, 1 );
+    select_weight_type = getAdditionalParam( 'select_weight_type', varargin, 'random_select' ); % random_select random_generate
     
     class_name = categorical(categories(trainingDataY));
     [new_trainingDataY, ~] = grp2idx(trainingDataY);
     
-    [ W, W_code ] = initHidden( hiddenNodes , trainingDataU , seed, trainingCode );
+    [ trainingDataXX ] = combine_training_data(trainingDataX_1, trainingDataX_2, combine_rule);
+    [ W, W_code ] = initHidden( hiddenNodes , trainingDataXX , seed, trainingCode, select_weight_type );
     
     tic
-    [beta] = trainWELM_onevsall(trainingDataX_1, trainingDataX_2,...
-        new_trainingDataY, W, regularizationC, balance, distFunction, combine_rule);
+    [beta] = trainWELM_onevsall(trainingDataXX, new_trainingDataY, W, ...
+        regularizationC, balance, distFunction);
     trainingTime = toc;
     
+    [ testDataXX ] = combine_training_data(testDataX_1, testDataX_2, combine_rule);
+    
     tic
-    [predictY] = testWELM(testDataX_1, testDataX_2, W, beta, distFunction, combine_rule);
+    [predictY] = testWELM(testDataXX, W, beta, distFunction);
     testTime = toc;
     
 %     Convert predictY back to actual label
@@ -36,24 +40,43 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = pelm1Classi
     mdl = table(W_code, beta);
 end
 
-function [ W, W_code ] = initHidden( h , X , seed, code )
-    X_size = size(X,1);
-    h_size = round((h/100) * X_size);
-    h_size = min(X_size, h_size);
-    rng(seed);
-    random_pick_index = randperm(size(X,1),h_size);
-    W = X(random_pick_index, :);
-    W_code = code(random_pick_index, :);
+function [ HH ] = combine_training_data(XX_1, XX_2, cr)
+    if strcmp(cr, 'sum')
+        HH = XX_1 + XX_2;
+    elseif strcmp(cr, 'minus')
+        HH = XX_1 - XX_2;
+    elseif strcmp(cr, 'multiply')
+        HH = XX_1 .* XX_2; 
+    elseif strcmp(cr, 'distance')
+        HH = abs(XX_1 - XX_2);
+    elseif strcmp(cr, 'mean')
+        HH = (XX_1 + XX_2)/2;
+    elseif strcmp(cr, 'linear')
+        HH = XX_1 * XX_2;
+    end
 end
 
-function [beta] = trainWELM_onevsall(X_1, X_2, T, W, regularizationC, balance, distFunction, rule )
+function [ W, W_code ] = initHidden( h , X , seed, code, weighttype )
+    X_size_row = size(X,1);
+    h_size = round((h/100) * X_size_row);
+    h_size = min(X_size_row, h_size);
+    rng(seed);
+    if strcmp(weighttype, 'random_select')
+        random_pick_index = randperm(size(X,1),h_size);
+        W = X(random_pick_index, :);
+        W_code = code(random_pick_index, :);
+    else % random_generate
+        W = rand(h_size, size(X,2));
+        W_code = repmat(seed, h_size, size(code,2));
+    end
+    
+end
 
-    [ H_1 ] = simKernel(X_1, W, distFunction);
-    [ H_2 ] = simKernel(X_2, W, distFunction);
+function [beta] = trainWELM_onevsall(XX, T, W, regularizationC, balance, distFunction )
+
+    [ H ] = simKernel(XX, W, distFunction);
     
-    [ H ] = combineRule(H_1, H_2, rule);
-    
-    clear H_1 H_2 X_1 X_2 W
+    clear XX W
     
     if balance == 1
         [S,SI] = hist(T,unique(T));
@@ -69,17 +92,7 @@ function [beta] = trainWELM_onevsall(X_1, X_2, T, W, regularizationC, balance, d
     
     B = cell2mat(arrayfun(@(x) S(find(x==SI)), T, 'UniformOutput', false));
     H = repmat(B,1,size(H,2)).*H;
-    beta = inv( (H'*H) + ( (1/regularizationC) * eye(size(H,2)) ) ) * (H'*(T_onehot.*B));
-end
-
-function [ HH ] = simKernel_old(XX, WW, distFunc)
-	if strcmp(distFunc, 'cosine') || strcmp(distFunc, 'jaccard') || ...
-            strcmp(distFunc, 'squaredeuclidean') || strcmp(distFunc, 'euclidean') % distance
-        HH = pdist2(XX, WW, distFunc);
-    else % linear
-        HH = XX*WW';
-    end
-    
+    beta = ( (H'*H) + ( (1/regularizationC) * eye(size(H,2)) ) ) \ (H'*(T_onehot.*B));
 end
 
 function [ HH ] = simKernel(XX, WW, distFunc)
@@ -130,35 +143,13 @@ function [ HH ] = simKernel(XX, WW, distFunc)
     
 end
 
-function [ HH ] = combineRule(XX_1, XX_2, cr)
-    if strcmp(cr, 'sum')
-        HH = XX_1 + XX_2;
-    elseif strcmp(cr, 'minus')
-        HH = XX_1 - XX_2;
-    elseif strcmp(cr, 'multiply')
-        HH = XX_1 .* XX_2; 
-    elseif strcmp(cr, 'distance')
-        HH = abs(XX_1 - XX_2);
-    elseif strcmp(cr, 'mean')
-        HH = (XX_1 + XX_2)/2;
-    end
-end
-
 function oh = convert_onehot(c,nc)
     oh = zeros(1,nc);
     oh(c) = 1;
 end
 
-function [predictY] = testWELM(Xtest_1, Xtest_2, WW, beta, distFunction, rule)
-    if gpuDeviceCount > 0 
-        [ H_1 ] = simKernel_gpu(Xtest_1, WW, distFunction);
-        [ H_2 ] = simKernel_gpu(Xtest_2, WW, distFunction);
-    else
-        [ H_1 ] = simKernel(Xtest_1, WW, distFunction);
-        [ H_2 ] = simKernel(Xtest_2, WW, distFunction);
-	end
-    
-    [ H ] = combineRule(H_1, H_2, rule);
+function [predictY] = testWELM(Xtest, WW, beta, distFunction)
+    [ H ] = simKernel(Xtest, WW, distFunction);
     Hbeta = H*beta;
     [~, predictY] = max(Hbeta,[],2);
 end

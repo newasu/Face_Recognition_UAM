@@ -1,5 +1,5 @@
-function [ foldLog, avgFoldLog ] = pelm1CV(foldIdx, data_0, data_1, data_2, labels, data_code, varargin)
-%PELM1CV Summary of this function goes here
+function [foldLog, avgFoldLog] = pelm2CV(foldIdx, data_1, data_2, labels, data_code, varargin)
+%PELM2CV Summary of this function goes here
 %   Detailed explanation goes here
 
     distFunction = getAdditionalParam( 'distFunction', varargin, 'euclidean' );  % euclidean cosine
@@ -7,6 +7,7 @@ function [ foldLog, avgFoldLog ] = pelm1CV(foldIdx, data_0, data_1, data_2, labe
     regularizationC = getAdditionalParam( 'regularizationC', varargin, 1 );
     combine_rule = getAdditionalParam( 'combine_rule', varargin, 'sum' ); % sum minus multiply distance mean
     seed = getAdditionalParam( 'seed', varargin, 1 );
+    select_weight_type = getAdditionalParam( 'select_weight_type', varargin, 'random_select' ); % random_select random_generate
     
     countingRound = 0;
     paramAll = combvec(hiddenNodes,regularizationC);
@@ -27,8 +28,6 @@ function [ foldLog, avgFoldLog ] = pelm1CV(foldIdx, data_0, data_1, data_2, labe
         trainingLabel(foldIdx(fold,:),:) = [];
 %         trainingFileNames(foldIdx(fold,:),:) = [];
         trainingCode(foldIdx(fold,:),:) = [];
-        trainingCode = unique(trainingCode);
-        training_u = data_0(trainingCode,:);
         
         % test the rest part
         testData_1 = data_1(foldIdx(fold,:),:);
@@ -38,17 +37,17 @@ function [ foldLog, avgFoldLog ] = pelm1CV(foldIdx, data_0, data_1, data_2, labe
 %         testCode = data_code(foldIdx(fold,:),:);
         
         for i = 1 : welmParam
-            [~, score, mdl, label_mat, trainingTime, testTime] = pelm1Classify(...
-                trainingData_1, trainingData_2, trainingLabel, training_u,...
-                trainingCode, testData_1, testData_2, testLabel, testFileNames,...
-                'seed', seed, 'combine_rule', combine_rule,...
-                'distFunction', distFunction, 'hiddenNodes', paramAll(1,i),...
-                'regularizationC', paramAll(2,i));
+            [~, score, mdl, label_mat, trainingTime, testTime] = pelm2Classify(...
+                trainingData_1, trainingData_2, trainingLabel, trainingCode, ...
+                testData_1, testData_2, testLabel, testFileNames,...
+                'seed', seed, 'combine_rule', combine_rule, ...
+                'distFunction', distFunction, 'hiddenNodes', paramAll(1,i), ...
+                'regularizationC', paramAll(2,i), 'select_weight_type', select_weight_type);
             
             % exclude model for reducing file size
 %             mdl = [];
             
-            foldLog = [foldLog; paramAll(1,i) paramAll(2,i) fold score.F1_score {label_mat} {mdl} trainingTime testTime];
+            foldLog = [foldLog; paramAll(1,i) paramAll(2,i) fold score.Accuracy {label_mat} {mdl} trainingTime testTime];
 
             % Count Progress Bar
             countingRound = countingRound + 1;
