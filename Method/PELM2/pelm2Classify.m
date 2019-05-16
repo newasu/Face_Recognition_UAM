@@ -52,7 +52,9 @@ function [ HH ] = combine_training_data(XX_1, XX_2, cr)
     elseif strcmp(cr, 'mean')
         HH = (XX_1 + XX_2)/2;
     elseif strcmp(cr, 'linear')
-        HH = XX_1 * XX_2;
+        HH = XX_1 * XX_2';
+	elseif strcmp(cr, 'euclidean')
+        HH= simKernel(XX_1, XX_2, cr);
     end
 end
 
