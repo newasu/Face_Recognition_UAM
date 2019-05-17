@@ -32,7 +32,7 @@ function [ foldLog, avgFoldLog ] = pelm1CV(foldIdx, data_0, data_1, data_2, labe
         
         % test the rest part
         testData_1 = data_1(foldIdx(fold,:),:);
-        testData_2 = data_1(foldIdx(fold,:),:);
+        testData_2 = data_2(foldIdx(fold,:),:);
         testLabel = labels(foldIdx(fold,:),:);
         testFileNames = data_code(foldIdx(fold,:),:);
 %         testCode = data_code(foldIdx(fold,:),:);
@@ -48,7 +48,7 @@ function [ foldLog, avgFoldLog ] = pelm1CV(foldIdx, data_0, data_1, data_2, labe
             % exclude model for reducing file size
 %             mdl = [];
             
-            foldLog = [foldLog; paramAll(1,i) paramAll(2,i) fold score.F1_score {label_mat} {mdl} trainingTime testTime];
+            foldLog = [foldLog; paramAll(1,i) paramAll(2,i) fold score.Accuracy {label_mat} {mdl} trainingTime testTime];
 
             % Count Progress Bar
             countingRound = countingRound + 1;

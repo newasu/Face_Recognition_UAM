@@ -101,9 +101,15 @@ function [ HH ] = simKernel(XX, WW, distFunc)
 	if strcmp(distFunc, 'cosine') || strcmp(distFunc, 'jaccard') || ...
             strcmp(distFunc, 'squaredeuclidean') || strcmp(distFunc, 'euclidean') % distance
         
+        if gpuDeviceCount > 0
+%             my_gpuDevice = gpuDevice(1);
+%             round_step = round(sqrt(my_gpuDevice.AvailableMemory*0.25));
+            round_step = 20000;
+        else
+            round_step = 100000000000;
+        end
+        
         % divide data to calculate distance for avoiding over memory usage
-%         my_gpuDevice = gpuDevice(1);
-        round_step = 20000;
         ii_round = ceil(size(XX,1)/round_step);
         jj_round = ceil(size(WW,1)/round_step);
         HH = [];
@@ -140,7 +146,11 @@ function [ HH ] = simKernel(XX, WW, distFunc)
         end
         
     else % linear
-        HH = gather(gpuArray(XX) * gpuArray(WW)');
+        if gpuDeviceCount > 0
+            XX = gpuArray(XX);
+            WW = gpuArray(WW);
+        end
+        HH = gather(XX * WW');
     end
     
 end

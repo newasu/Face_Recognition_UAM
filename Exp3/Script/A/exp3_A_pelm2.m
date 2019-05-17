@@ -1,30 +1,33 @@
-% exp4 A classify Is that same person by PELM2
+% exp3 A classify Is that same person by PELM2
 
 clear all
 
 % Settings
+experiment_name = 'Exp3';
+sub_experiment_name = 'A';
+method_name = 'pelm2';
+
 numb_run = 1;
-numb_cv = 2;
+numb_cv = 5;
 training_sample_percent = 0.001; % percentages of training sample
 selected_pose_numb = 3; % number of image used each user
-number_comparison = 1;
+number_comparison = 1; % number of pair comparison for each same class
 do_balance_class = 1;
 
 % PELM's parameters
-hiddenNodes = 100;
-regularizationC = power(10,-6:1:6);
+hiddenNodes = 10:10:100;
+regularizationC = power(10,-4:1:4);
 select_weight_type = 'random_select'; % random_select random_generate
 distFunction = 'euclidean';
-combine_rule = {'sum', 'multiply', 'distance', 'mean', 'linear', 'euclidean'};
-% sum multiply distance mean linear euclidean
+combine_rule = {'mean', 'sum', 'multiply', 'distance'}; % sum multiply distance mean
 
 % Save path
 default_data_store_path = pwd;
 idcs = strfind(pwd,filesep);
 default_data_store_path = [default_data_store_path(1:idcs(end)-1) ...
     filesep 'Face_Recognition_UAM_data_store'];
-saveFolderPath = {'Result', 'Exp4', 'Exp4_A'};
-filename = [saveFolderPath{end} '_pelm2'];
+saveFolderPath = {'Result', experiment_name, [experiment_name '_' sub_experiment_name]};
+filename = [saveFolderPath{end} '_' method_name];
 save_path = MakeChainFolder(saveFolderPath, 'target_path', default_data_store_path);
 
 % %Load data

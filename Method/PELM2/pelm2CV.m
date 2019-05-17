@@ -31,7 +31,7 @@ function [foldLog, avgFoldLog] = pelm2CV(foldIdx, data_1, data_2, labels, data_c
         
         % test the rest part
         testData_1 = data_1(foldIdx(fold,:),:);
-        testData_2 = data_1(foldIdx(fold,:),:);
+        testData_2 = data_2(foldIdx(fold,:),:);
         testLabel = labels(foldIdx(fold,:),:);
         testFileNames = data_code(foldIdx(fold,:),:);
 %         testCode = data_code(foldIdx(fold,:),:);

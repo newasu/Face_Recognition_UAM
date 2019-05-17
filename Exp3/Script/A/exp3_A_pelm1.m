@@ -3,23 +3,32 @@
 clear all
 
 % Settings
+experiment_name = 'Exp3';
+sub_experiment_name = 'A';
+method_name = 'pelm1';
+
 numb_run = 1;
-numb_cv = 2;
+numb_cv = 5;
 training_sample_percent = 0.001; % percentages of training sample
 selected_pose_numb = 3; % number of image used each user
-number_comparison = 1;
+number_comparison = 1; % number of pair comparison for each same class
 do_balance_class = 1;
 
 % PELM's parameters
-hiddenNodes = 100;
-regularizationC = power(10,-6:1:6);
+hiddenNodes = 10:10:100;
+regularizationC = power(10,-4:1:4);
+select_weight_type = 'random_select'; % random_select random_generate
 distFunction = 'euclidean';
-combine_rule = {'sum', 'multiply', 'distance', 'mean'}; % sum multiply distance mean
+combine_rule = {'mean', 'sum', 'multiply', 'distance'}; % sum multiply distance mean
 
 % Save path
-saveFolderPath = {'Result', 'Exp3', 'Exp3_A'};
-filename = [saveFolderPath{end} '_pelm'];
-save_path = MakeChainFolder(saveFolderPath, 'target_path', pwd);
+default_data_store_path = pwd;
+idcs = strfind(pwd,filesep);
+default_data_store_path = [default_data_store_path(1:idcs(end)-1) ...
+    filesep 'Face_Recognition_UAM_data_store'];
+saveFolderPath = {'Result', experiment_name, [experiment_name '_' sub_experiment_name]};
+filename = [saveFolderPath{end} '_' method_name];
+save_path = MakeChainFolder(saveFolderPath, 'target_path', default_data_store_path);
 
 % %Load data
 [diveface_feature, diveface_label] = LoadDiveFaceFull();
@@ -45,7 +54,7 @@ for random_seed = 1 : numb_run
         'random_seed', random_seed, 'number_comparison', number_comparison, ...
         'selected_pose_numb', selected_pose_numb);
     
-    % Subsampling
+    % Subsampling to balance training set
     if do_balance_class
         [training_pair_list, training_label_pair_list] = BalanceClasses(...
             training_pair_list, training_label_pair_list, 'random_seed', random_seed);
@@ -65,16 +74,19 @@ for random_seed = 1 : numb_run
         [ foldLog, avgFoldLog ] = pelm1CV(kFoldIdx, diveface_feature, ...
             trainingDataX_1, trainingDataX_2, trainingDataY, training_data_id, ...
             'seed', random_seed, 'hiddenNodes', hiddenNodes, 'regularizationC', ...
-            regularizationC, 'distFunction', distFunction, 'combine_rule', combine_rule{i});
+            regularizationC, 'distFunction', distFunction, 'combine_rule', combine_rule{i}, ...
+            'select_weight_type', select_weight_type);
 
         data_log(random_seed,:) = {foldLog avgFoldLog};
         data_log = cell2table(data_log, 'variablenames', {'foldLog' 'avgFoldLog'});
 
         % Save
-        my_filename = [filename '_' erase(num2str(training_sample_percent),".") '_' combine_rule{i}];
-        my_save_path = [save_path '/' my_filename];
+        my_filename = [filename '_' erase(num2str(training_sample_percent),".") ...
+            '_' combine_rule{i} '_' select_weight_type];
+        my_save_path = [save_path filesep my_filename];
         eval([my_filename ' = data_log;']);
         save(my_save_path, my_filename,'-v7.3');
+        eval(['clear ' my_filename])
         clear data_log
     end
     

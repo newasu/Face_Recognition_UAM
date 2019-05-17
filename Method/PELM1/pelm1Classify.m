@@ -10,11 +10,12 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = pelm1Classi
     hiddenNodes = getAdditionalParam( 'hiddenNodes', varargin, [100] );
     combine_rule = getAdditionalParam( 'combine_rule', varargin, 'sum' ); % sum minus multiply distance mean
     seed = getAdditionalParam( 'seed', varargin, 1 );
-    
+    select_weight_type = getAdditionalParam( 'select_weight_type', varargin, 'random_select' ); % random_select random_generate
+
     class_name = categorical(categories(trainingDataY));
     [new_trainingDataY, ~] = grp2idx(trainingDataY);
     
-    [ W, W_code ] = initHidden( hiddenNodes , trainingDataU , seed, trainingCode );
+    [ W, W_code ] = initHidden( hiddenNodes , trainingDataU , seed, trainingCode, select_weight_type );
     
     tic
     [beta] = trainWELM_onevsall(trainingDataX_1, trainingDataX_2,...
@@ -36,14 +37,19 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = pelm1Classi
     mdl = table(W_code, beta);
 end
 
-function [ W, W_code ] = initHidden( h , X , seed, code )
+function [ W, W_code ] = initHidden( h , X , seed, code, weighttype )
     X_size = size(X,1);
     h_size = round((h/100) * X_size);
     h_size = min(X_size, h_size);
     rng(seed);
-    random_pick_index = randperm(size(X,1),h_size);
-    W = X(random_pick_index, :);
-    W_code = code(random_pick_index, :);
+    if strcmp(weighttype, 'random_select')
+        random_pick_index = randperm(size(X,1),h_size);
+        W = X(random_pick_index, :);
+        W_code = code(random_pick_index, :);
+    else % random_generate
+        W = rand(h_size, size(X,2));
+        W_code = repmat(seed, h_size, size(code,2));
+    end
 end
 
 function [beta] = trainWELM_onevsall(X_1, X_2, T, W, regularizationC, balance, distFunction, rule )
@@ -69,26 +75,22 @@ function [beta] = trainWELM_onevsall(X_1, X_2, T, W, regularizationC, balance, d
     
     B = cell2mat(arrayfun(@(x) S(find(x==SI)), T, 'UniformOutput', false));
     H = repmat(B,1,size(H,2)).*H;
-    beta = inv( (H'*H) + ( (1/regularizationC) * eye(size(H,2)) ) ) * (H'*(T_onehot.*B));
-end
-
-function [ HH ] = simKernel_old(XX, WW, distFunc)
-	if strcmp(distFunc, 'cosine') || strcmp(distFunc, 'jaccard') || ...
-            strcmp(distFunc, 'squaredeuclidean') || strcmp(distFunc, 'euclidean') % distance
-        HH = pdist2(XX, WW, distFunc);
-    else % linear
-        HH = XX*WW';
-    end
-    
+    beta = ( (H'*H) + ( (1/regularizationC) * eye(size(H,2)) ) ) \ (H'*(T_onehot.*B));
 end
 
 function [ HH ] = simKernel(XX, WW, distFunc)
 	if strcmp(distFunc, 'cosine') || strcmp(distFunc, 'jaccard') || ...
             strcmp(distFunc, 'squaredeuclidean') || strcmp(distFunc, 'euclidean') % distance
         
+        if gpuDeviceCount > 0
+%             my_gpuDevice = gpuDevice(1);
+%             round_step = round(sqrt(my_gpuDevice.AvailableMemory*0.25));
+            round_step = 20000;
+        else
+            round_step = 100000000000;
+        end
+        
         % divide data to calculate distance for avoiding over memory usage
-%         my_gpuDevice = gpuDevice(1);
-        round_step = 20000;
         ii_round = ceil(size(XX,1)/round_step);
         jj_round = ceil(size(WW,1)/round_step);
         HH = [];
@@ -125,7 +127,11 @@ function [ HH ] = simKernel(XX, WW, distFunc)
         end
         
     else % linear
-        HH = gather(gpuArray(XX) * gpuArray(WW)');
+        if gpuDeviceCount > 0
+            XX = gpuArray(XX);
+            WW = gpuArray(WW);
+        end
+        HH = gather(XX * WW');
     end
     
 end
@@ -150,13 +156,8 @@ function oh = convert_onehot(c,nc)
 end
 
 function [predictY] = testWELM(Xtest_1, Xtest_2, WW, beta, distFunction, rule)
-    if gpuDeviceCount > 0 
-        [ H_1 ] = simKernel_gpu(Xtest_1, WW, distFunction);
-        [ H_2 ] = simKernel_gpu(Xtest_2, WW, distFunction);
-    else
-        [ H_1 ] = simKernel(Xtest_1, WW, distFunction);
-        [ H_2 ] = simKernel(Xtest_2, WW, distFunction);
-	end
+    [ H_1 ] = simKernel(Xtest_1, WW, distFunction);
+    [ H_2 ] = simKernel(Xtest_2, WW, distFunction);
     
     [ H ] = combineRule(H_1, H_2, rule);
     Hbeta = H*beta;

@@ -1,9 +1,0 @@
-Face_Recognition_UAM > Exp4
-
-Objective:
-classify task Is that same or different person by PELM2:
-
-- Exp4_A: evaluate performance only for best combination rule and tuning parameter by CV technique.
-          Weights of a model select from training sample.
-	- vary number of hidden nodes
-	- vary number of regC
