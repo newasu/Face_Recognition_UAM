@@ -14,3 +14,8 @@ classify task Is that same or different person:
     - WELM linear kernel
 
 - Exp3_C: observe performances on CV technique by Euclidean similarity.
+
+- Exp3_D: observe performances on CV technique by PELM.
+	- vary number of hidden nodes [10:10:100]
+	- vary number of regC [power(10,-6:1:6)]
+    - WELM cosine kernel
