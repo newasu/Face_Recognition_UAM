@@ -8,10 +8,10 @@ sub_experiment_name = 'C';
 method_name = 'dist';
 
 % Distance's parameter
-classify_threshold = 0.85;
+classify_threshold = 0.8;
 
 numb_run = 1;
-numb_cv = 2;
+numb_cv = 5;
 training_sample_percent = 0.001; % percentages of training sample
 selected_pose_numb = 3; % number of image used each user
 number_comparison = 1;
@@ -45,78 +45,88 @@ for random_seed = 1 : numb_run
     [training_id_index, test_id_index, data, user_index] = SplitDataset(diveface_label,...
         'training_sample_percent', training_sample_percent, 'random_seed', random_seed);
     
+%     Subsampling test_id_index size to be equal to training_id_index size
+    for i = 1 : size(test_id_index,1)
+        for j = 1 : size(test_id_index,2)
+            temp_train = training_id_index{i,j};
+            temp_train = numel(temp_train{1});
+            temp_test = test_id_index{i,j};
+            temp_test = temp_test{1};
+            temp_test = temp_test(randperm(numel(temp_test), temp_train));
+
+            test_id_index{i,j} = {temp_test};
+        end
+    end
+
+    clear temp_train temp_test i j
+
     [training_pair_list, training_label_pair_list] = PairDataEachClass(...
         training_id_index, diveface_label,...
         'random_seed', random_seed, 'number_comparison', number_comparison, ...
         'selected_pose_numb', selected_pose_numb);
-    
-    % Subsampling to balance training set
+    [test_pair_list, test_label_pair_list] = PairDataEachClass(...
+        test_id_index, diveface_label,...
+        'random_seed', random_seed, 'number_comparison', number_comparison, ...
+        'selected_pose_numb', selected_pose_numb);
+
+    % Subsampling to balance dataset
     if do_balance_class
         [training_pair_list, training_label_pair_list] = BalanceClasses(...
             training_pair_list, training_label_pair_list, 'random_seed', random_seed);
+        [test_pair_list, test_label_pair_list] = BalanceClasses(...
+            test_pair_list, test_label_pair_list, 'random_seed', random_seed);
     end
 
     % Training data
-    trainingDataX_1 = diveface_feature(training_pair_list(:,1),:);
-    trainingDataX_2 = diveface_feature(training_pair_list(:,2),:);
-    training_data_id = training_pair_list;
-    trainingDataY = training_label_pair_list;
-    
-    class_name = categorical(categories(trainingDataY));
-    
-    % Genarate k-fold indices
-    [ kFoldIdx, ~ ] = GetKFoldIndices( numb_cv, trainingDataY, random_seed );
-    
-    foldLog = [];
-    for fold = 1 : numb_cv
-        % test the rest part
-        testData_1 = trainingDataX_1(kFoldIdx(fold,:),:);
-        testData_2 = trainingDataX_2(kFoldIdx(fold,:),:);
-        testLabel = trainingDataY(kFoldIdx(fold,:),:);
-        testFileNames = training_data_id(kFoldIdx(fold,:),:);
-        
-        trainingTime = 0;
-        
-        tic;
-        for ii = 1 : numel(testLabel)
-            temp(ii) = 1/(1+pdist2(testData_1(ii,:), testData_2(ii,:), 'euclidean'));
-        end
-        testTime = toc;
-        
-        filenames = training_data_id;
-        labels = trainingDataY;
-        same_idx = find(temp >= classify_threshold);
-        predict_labels = repmat(class_name(1), numel(trainingDataY), 1);
-        predict_labels(same_idx) = class_name(2);
-        
-        [~,score,~] = my_confusion.getMatrix(double(labels),double(predict_labels),0);
+%     trainingDataX_1 = diveface_feature(training_pair_list(:,1),:);
+%     trainingDataX_2 = diveface_feature(training_pair_list(:,2),:);
+%     training_data_id = training_pair_list;
+%     trainingDataY = training_label_pair_list;
 
-        label_mat = table(filenames, labels, predict_labels, ...
-            'variablenames', {'filenames', 'labels', 'predict_labels'});
-        
-        foldLog = [foldLog; fold score.Accuracy {label_mat} trainingTime testTime];
+    % Test data
+    testDataX_1 = diveface_feature(test_pair_list(:,1),:);
+    testDataX_2 = diveface_feature(test_pair_list(:,2),:);
+    test_data_id = test_pair_list;
+    testDataY = test_label_pair_list;
+    
+    temp = [];
+    trainingTime = 0;
+    tic;
+    for ii = 1 : numel(testDataY)
+        temp(ii) = 1/(1+pdist2(testDataX_1(ii,:), testDataX_2(ii,:), 'euclidean'));
     end
-    
-    foldLog = array2table(foldLog, 'VariableNames', {'fold', 'score', ...
-         'label_mat', 'trainingTime', 'testTime'});
-     
-     % Average 5 folds into 1
-    avgFoldLog = cell2mat(table2array(foldLog(:, [2 4 5])));
-    avgFoldLog = reshape(avgFoldLog',[(size(avgFoldLog,2)), numb_cv, (size(avgFoldLog,1)/numb_cv)]);
-    avgFoldLog = sum(avgFoldLog,2)/numb_cv;
-    avgFoldLog = reshape(avgFoldLog,[size(avgFoldLog,1) size(avgFoldLog,3)])';
-    avgFoldLog = array2table(avgFoldLog, 'VariableNames', {'score', 'trainingTime', 'testTime'});
-    
-    data_log(random_seed,:) = {foldLog avgFoldLog};
-    data_log = cell2table(data_log, 'variablenames', {'foldLog' 'avgFoldLog'});
+    testTime = toc;
 
-    % Save
-    my_filename = [filename '_' erase(num2str(training_sample_percent),".")];
-    my_save_path = [save_path filesep my_filename];
-    eval([my_filename ' = data_log;']);
-    save(my_save_path, my_filename,'-v7.3');
-    eval(['clear ' my_filename])
-    clear data_log
-%     
+    class_name = categorical(unique(testDataY));
+    filenames = test_data_id;
+    labels = testDataY;
+    same_idx = find(temp >= classify_threshold);
+    predict_labels = repmat(class_name(1), numel(labels), 1);
+    predict_labels(same_idx) = class_name(2);
+
+    [~,score,~] = my_confusion.getMatrix(double(labels),double(predict_labels),0);
+    
+    label_mat = table(filenames, labels, predict_labels, temp', 'variablenames', ...
+        {'filenames', 'labels', 'predict_labels', 'score'});
+    testResult = table(score.Accuracy, {label_mat}, trainingTime, testTime, 'variablenames', ...
+        {'score', 'label_mat', 'trainingTime', 'testTime'});
+    
+    data_log(random_seed,:) = {[] [] testResult};
+    
+    clear training_id_index test_id_index data user_index
+    clear training_pair_list training_label_pair_list
+    clear test_pair_list test_label_pair_list
+    clear trainingDataX_1 trainingDataX_2 trainingDataY training_data_id
+    clear testDataX_1 testDataX_2 testDataY test_data_id
+    clear kFoldIdx foldLog avgFoldLog trainingResult testResult
 end
 
+% Save
+data_log = cell2table(data_log, 'variablenames', ...
+	{'foldLog' 'trainingResult' 'testResult'});
+my_filename = [filename '_' erase(num2str(training_sample_percent),".")];
+my_save_path = [save_path filesep my_filename];
+eval([my_filename ' = data_log;']);
+save(my_save_path, my_filename,'-v7.3');
+eval(['clear ' my_filename])
+clear data_log

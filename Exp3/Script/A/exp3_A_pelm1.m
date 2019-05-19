@@ -16,10 +16,10 @@ do_balance_class = 1;
 
 % PELM's parameters
 hiddenNodes = 10:10:100;
-regularizationC = power(10,-4:1:4);
+regularizationC = power(10,-6:1:6);
 select_weight_type = 'random_select'; % random_select random_generate
-distFunction = 'euclidean';
-combine_rule = {'distance', 'mean', 'multiply', 'sum'}; % sum multiply distance mean
+distFunction = 'euclidean'; % euclidean cosine
+combine_rule = {'distance', 'mean', 'multiply', 'sum'}; % distance mean multiply sum
 
 % Save path
 default_data_store_path = pwd;

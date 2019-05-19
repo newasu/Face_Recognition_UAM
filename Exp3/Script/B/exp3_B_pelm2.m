@@ -7,7 +7,7 @@ experiment_name = 'Exp3';
 sub_experiment_name = 'B';
 method_name = 'pelm2';
 
-numb_run = 2;
+numb_run = 1;
 numb_cv = 5;
 training_sample_percent = 0.001; % percentages of training sample
 selected_pose_numb = 3; % number of image used each user
@@ -15,11 +15,11 @@ number_comparison = 1; % number of pair comparison for each same class
 do_balance_class = 1;
 
 % PELM's parameters
-hiddenNodes = 10:10:20;
-regularizationC = power(10,-1:1:0);
+hiddenNodes = 10:10:100;
+regularizationC = power(10,-6:1:6);
 select_weight_type = 'random_select'; % random_select random_generate
-distFunction = 'linear';
-combine_rule = {'mean', 'sum', 'multiply', 'distance'}; % sum multiply distance mean
+distFunction = 'cosine'; % euclidean cosine
+combine_rule = {'distance', 'mean', 'multiply', 'sum'}; % distance mean multiply sum
 
 % Save path
 default_data_store_path = pwd;
@@ -123,7 +123,7 @@ for combine_rule_round = 1 : numel(combine_rule)
         clear test_pair_list test_label_pair_list
         clear trainingDataX_1 trainingDataX_2 trainingDataY training_data_id
         clear testDataX_1 testDataX_2 testDataY test_data_id
-        clear kFoldIdx foldLog avgFoldLog trainingResult testResult 
+        clear kFoldIdx foldLog avgFoldLog trainingResult testResult
     end
     
     % Save
