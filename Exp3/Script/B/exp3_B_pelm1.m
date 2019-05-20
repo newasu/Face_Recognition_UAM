@@ -9,7 +9,7 @@ method_name = 'pelm1';
 
 numb_run = 1;
 numb_cv = 5;
-training_sample_percent = 0.001; % percentages of training sample
+training_sample_percent = 0.005; % percentages of training sample
 selected_pose_numb = 3; % number of image used each user
 number_comparison = 1; % number of pair comparison for each same class
 do_balance_class = 1;
