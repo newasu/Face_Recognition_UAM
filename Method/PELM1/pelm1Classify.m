@@ -23,7 +23,7 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = pelm1Classi
     trainingTime = toc;
     
     tic
-    [predictY] = testWELM(testDataX_1, testDataX_2, W, beta, distFunction, combine_rule);
+    [predictY, predict_score] = testWELM(testDataX_1, testDataX_2, W, beta, distFunction, combine_rule);
     testTime = toc;
     
 %     Convert predictY back to actual label
@@ -31,8 +31,8 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = pelm1Classi
     
     [~,score,~] = my_confusion.getMatrix(double(testDataY),double(predictY),0);
     
-    label_mat = table(testFileNames, testDataY, predictY, ...
-        'VariableNames', {'filenames' 'labels', 'predict_labels'});
+    label_mat = table(testFileNames, testDataY, predictY, predict_score, ...
+        'VariableNames', {'filenames' 'labels', 'predict_labels', 'predict_score'});
     
     mdl = table(W_code, beta);
 end
@@ -155,7 +155,7 @@ function oh = convert_onehot(c,nc)
     oh(c) = 1;
 end
 
-function [predictY] = testWELM(Xtest_1, Xtest_2, WW, beta, distFunction, rule)
+function [predictY, Hbeta] = testWELM(Xtest_1, Xtest_2, WW, beta, distFunction, rule)
     [ H_1 ] = simKernel(Xtest_1, WW, distFunction);
     [ H_2 ] = simKernel(Xtest_2, WW, distFunction);
     

@@ -15,24 +15,24 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = welmClassif
     [ W, W_code ] = initHidden( hiddenNodes , trainingDataX , seed, trainingCode );
 
     tic
-    [~, beta] = trainWELM_onevsall(trainingDataX, new_trainingDataY, W, regularizationC, balance, distFunction);
+    [beta] = trainWELM_onevsall(trainingDataX, new_trainingDataY, W, regularizationC, balance, distFunction);
     trainingTime = toc;
     
     tic
-    [predictY] = testWELM(testDataX, W, beta, distFunction);
+    [predictY, predict_score] = testWELM(testDataX, W, beta, distFunction);
     testTime = toc;
     
 %     Convert predictY back to actual label
     predictY = class_name(round(predictY));
     
     [~,score,~] = my_confusion.getMatrix(double(testDataY),double(predictY),0);
-    label_mat = table(testFileNames, testDataY, predictY, ...
-        'VariableNames', {'filenames' 'labels', 'predict_labels'});
+    label_mat = table(testFileNames, testDataY, predictY, predict_score, ...
+        'VariableNames', {'filenames' 'labels', 'predict_labels', 'predict_score'});
     
     mdl = table(W_code, beta);
 end
 
-function [W, beta] = trainWELM_onevsall(X, T, W, regularizationC, balance, distFunction )
+function [beta] = trainWELM_onevsall(X, T, W, regularizationC, balance, distFunction )
 %     [ H ] = simKernel(X, W, distFunction);
     if gpuDeviceCount > 0 
         [ H ] = simKernel_gpu(X, W, distFunction);
@@ -126,7 +126,7 @@ function [ HH ] = simKernel_gpu(XX, WW, distFunc)
     
 end
 
-function [predictY] = testWELM(Xtest, WW, beta, distFunction )
+function [predictY, Hbeta] = testWELM(Xtest, WW, beta, distFunction )
     if gpuDeviceCount > 0 
         [ H ] = simKernel_gpu(Xtest, WW, distFunction);
     else

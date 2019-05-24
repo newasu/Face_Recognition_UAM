@@ -40,12 +40,14 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = libsvmClass
 %     each class. Note that the order of classes here is the same as 'Label'
 %     field in the model structure.
 
+    predict_score = predictY;
+
     %     Convert predictY back to actual label
     predictY = class_name(round(predictY));
     
     [~,score,~] = my_confusion.getMatrix(double(testDataY),double(predictY),0);
-    label_mat = table(testFileNames, testDataY, predictY, prob_values,...
-        'VariableNames', {'filenames' 'labels', 'predict_labels', 'SVM_scores'});
+    label_mat = table(testFileNames, testDataY, predictY, prob_values, predict_score, ...
+        'VariableNames', {'filenames' 'labels', 'predict_labels', 'SVM_scores', 'predict_score'});
 %     [CM, GORDER] = confusionmat(testDataY,predictY);
     
 end

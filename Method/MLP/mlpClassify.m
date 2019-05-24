@@ -29,12 +29,15 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = mlpClassify
     predictY = mdl(testDataX', 'useGPU','yes')';
     testTime = toc;
     
+    predict_score = predictY;
+    
 %     Convert predictY back to actual label
     [~, predictY] = max(predictY, [], 2);
     predictY = class_name(predictY);
     
 %     score = (sum(predictY==testDataY)/numel(testDataY)) * 100;
     [~,score,~] = my_confusion.getMatrix(double(testDataY),double(predictY),0);
-    label_mat = table(testFileNames, testDataY, predictY, 'VariableNames', {'filenames' 'labels', 'predict_labels'});
+    label_mat = table(testFileNames, testDataY, predictY, predict_score, ... 
+        'VariableNames', {'filenames' 'labels', 'predict_labels', 'predict_score'});
 end
 

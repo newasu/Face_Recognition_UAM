@@ -14,16 +14,16 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = ldaClassify
     trainingTime = toc;
     
     tic
-    [predictY] = testLDA(testDataX, trainingDataX, W, kernelType);
+    [predictY, predict_score] = testLDA(testDataX, trainingDataX, W, kernelType);
     testTime = toc;
-    
+        
 %     Convert predictY back to actual label
     predictY = class_name(predictY);
     
 %     score = (sum(predictY==testDataY)/numel(testDataY)) * 100;
     [~,score,~] = my_confusion.getMatrix(double(testDataY),double(predictY),0);
-    label_mat = table(testFileNames, testDataY, predictY, ...
-        'VariableNames', {'filenames' 'labels', 'predict_labels'});
+    label_mat = table(testFileNames, testDataY, predictY, predict_score, ...
+        'VariableNames', {'filenames' 'labels', 'predict_labels', 'predict_score'});
     
     mdl = table(W);
 
@@ -62,9 +62,10 @@ function oh = convert_onehot(c,nc)
     oh(c) = 1;
 end
 
-function [predictY] = testLDA(Xtest, Xtrain, W, kernelType )
+function [predictY, predict_score] = testLDA(Xtest, Xtrain, W, kernelType )
     Xtest = kernel(Xtest, Xtrain, kernelType);
     predictY = [ones(size(Xtest,1),1) Xtest] * W;
+    predict_score = predictY;
     [~, predictY] = max(predictY,[],2);
 end
 
