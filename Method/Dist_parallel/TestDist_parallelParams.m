@@ -22,9 +22,11 @@ function [ trainingResult, testResult, testCorrectIdx ] = TestDist_parallelParam
     predict_labels(same_idx) = class_name(2);
     testTime = toc;
     
+    predict_score = train_dist_score';
+    
     [~,score,~] = my_confusion.getMatrix(double(trainingLabel),double(predict_labels),0);
-    label_mat = table(trainingCode, trainingLabel, predict_labels, ...
-        'VariableNames', {'filenames' 'labels', 'predict_labels'});
+    label_mat = table(trainingCode, trainingLabel, predict_labels, predict_score, ...
+        'VariableNames', {'filenames' 'labels', 'predict_labels', 'predict_score'});
     
     trainingResult = array2table({threshold score.Accuracy label_mat trainingTime testTime},...
         'VariableNames', {'threshold', 'score', 'label_mat', 'trainingTime', 'testTime'});
@@ -41,9 +43,11 @@ function [ trainingResult, testResult, testCorrectIdx ] = TestDist_parallelParam
     predict_labels(same_idx) = class_name(2);
     testTime = toc;
     
+    predict_score = test_dist_score';
+    
     [~,score,~] = my_confusion.getMatrix(double(testLabel),double(predict_labels),0);
-    label_mat = table(testCode, testLabel, predict_labels, ...
-        'VariableNames', {'filenames' 'labels', 'predict_labels'});
+    label_mat = table(testCode, testLabel, predict_labels, predict_score, ...
+        'VariableNames', {'filenames' 'labels', 'predict_labels', 'predict_score'});
     
     testResult = array2table({threshold score.Accuracy label_mat trainingTime testTime},...
         'VariableNames', {'threshold', 'score', 'label_mat', 'trainingTime', 'testTime'});

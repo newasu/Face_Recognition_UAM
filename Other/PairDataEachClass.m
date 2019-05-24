@@ -71,7 +71,8 @@ function [pair_list, label_pair_list] = PairDataEachClass(data, data_info, varar
 
                             % Check repeat for whole set
                             if ~ismember(temp_pair, pair_flag, 'rows') &...
-                                    ~ismember(flip(temp_pair), pair_flag, 'rows')
+                                    ~ismember(flip(temp_pair), pair_flag, 'rows') &...
+                                    ~ismember(temp_data_info.data_id(k), temp_pair_data_info.data_id)
                                     [pair_flag, temp_pair_list, temp_label_pair_list] = add_pair(...
                                         pair_flag,temp_pair, temp_pair_list, temp_label_pair_list);
                                     disp(['Paired: ' num2str(size(temp_pair_list,1)) '/' total_round]);

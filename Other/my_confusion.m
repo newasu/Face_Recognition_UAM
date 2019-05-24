@@ -80,7 +80,7 @@ classdef my_confusion
             predict_class=cell(1,n_class);
             class_ref=cell(n_class,1);
             row_name=cell(1,n_class);
-            %Calculate conufsion for all classes
+            %Calculate conufusion for all classes
             for i=1:n_class
                 class_ref{i,1}=strcat('class',num2str(i),'==>',num2str(class_list(i)));
                 for j=1:n_class
@@ -91,7 +91,7 @@ classdef my_confusion
                 row_name{i}=strcat('Actual_class',num2str(i));
                 
                 % ROC by me
-                [~,~,~,AUC(i)] = perfcurve((actual==class_list(i)),+(predict==class_list(j)),1);
+%                 [~,~,~,AUC(i)] = perfcurve((actual==class_list(i)),(predict==class_list(j)),1);
                 
                 if Display
                     disp(class_ref{i})
@@ -102,8 +102,8 @@ classdef my_confusion
             c_matrix_table.Properties.RowNames=row_name;
             
             [Result,RefereceResult]=my_confusion.getValues(c_matrix);
-            Result.Roc = mean(AUC);
-            RefereceResult.Roc = AUC';
+%             Result.Roc = mean(AUC);
+%             RefereceResult.Roc = AUC';
             %Output Struct for individual Classes
             RefereceResult.Class=class_ref;
             %%

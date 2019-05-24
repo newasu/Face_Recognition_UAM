@@ -19,7 +19,6 @@ hiddenNodes = 10:10:100;
 regularizationC = power(10,-6:1:6);
 select_weight_type = 'random_select'; % random_select random_generate
 distFunction = 'euclidean'; % euclidean cosine
-combine_rule = {'distance', 'mean', 'multiply', 'sum'}; % distance mean multiply sum
 
 % Save path
 default_data_store_path = pwd;

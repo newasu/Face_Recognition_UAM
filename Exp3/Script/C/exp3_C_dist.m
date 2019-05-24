@@ -9,7 +9,6 @@ method_name = 'dist';
 
 % Distance's parameter
 distFunction = 'euclidean'; % euclidean cosine
-classify_threshold = 1;
 
 numb_run = 1;
 numb_cv = 5;
@@ -95,13 +94,13 @@ for random_seed = 1 : numb_run
     
     % Find optimal parameter
     [foldLog, avgFoldLog] = dist_parallelCV(kFoldIdx, trainingDataX_1, trainingDataX_2, ...
-    	trainingDataY, training_data_id, 'distFunction', distFunction);
+    	trainingDataY, training_data_id, 'distFunction', distFunction, 'seed', random_seed);
     
     % Test model
     [trainingResult, testResult, testCorrectIdx] = TestDist_parallelParams( ...
         trainingDataX_1, trainingDataX_2, trainingDataY, training_data_id, ...
         testDataX_1, testDataX_2, testDataY, test_data_id, ...
-        'threshold', avgFoldLog.threshold(1), 'distFunction', distFunction);
+        'distFunction', distFunction);
     
     data_log(random_seed,:) = {foldLog trainingResult testResult};
     

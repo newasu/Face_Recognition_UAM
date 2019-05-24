@@ -25,7 +25,7 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = celmClassif
     [ testDataXX ] = combine_training_data(testDataX_1, testDataX_2);
     
     tic
-    [predictY] = testWELM(testDataXX, W, beta, distFunction);
+    [predictY, predict_score] = testWELM(testDataXX, W, beta, distFunction);
     testTime = toc;
     
 %     Convert predictY back to actual label
@@ -33,8 +33,8 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = celmClassif
     
     [~,score,~] = my_confusion.getMatrix(double(testDataY),double(predictY),0);
     
-    label_mat = table(testFileNames, testDataY, predictY, ...
-        'VariableNames', {'filenames' 'labels', 'predict_labels'});
+    label_mat = table(testFileNames, testDataY, predictY, predict_score, ...
+        'VariableNames', {'filenames' 'labels', 'predict_labels', 'predict_score'});
     
     mdl = table(W_code, beta);
 
@@ -145,7 +145,7 @@ function oh = convert_onehot(c,nc)
     oh(c) = 1;
 end
 
-function [predictY] = testWELM(Xtest, WW, beta, distFunction)
+function [predictY, Hbeta] = testWELM(Xtest, WW, beta, distFunction)
     [ H ] = simKernel(Xtest, WW, distFunction);
     Hbeta = H*beta;
     [~, predictY] = max(Hbeta,[],2);
