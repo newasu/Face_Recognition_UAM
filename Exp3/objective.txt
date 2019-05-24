@@ -13,4 +13,6 @@ classify task Is that same or different person:
 	- vary number of regC [power(10,-6:1:6)]
     - WELM cosine kernel
 
-- Exp3_C: observe performances on CV technique by Euclidean similarity.
+- Exp3_C: observe performances by Euclidean similarity.
+
+- Exp3_D: observe performances by Concatenated ELM.

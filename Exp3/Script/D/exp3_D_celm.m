@@ -1,22 +1,25 @@
-% exp3 C classify Is that same person by Euclidean
+% exp3 B classify Is that same person by linear PELM2
 
 clear all
 
 % Settings
 experiment_name = 'Exp3';
-sub_experiment_name = 'C';
-method_name = 'dist';
-
-% Distance's parameter
-distFunction = 'euclidean'; % euclidean cosine
-classify_threshold = 1;
+sub_experiment_name = 'D';
+method_name = 'celm';
 
 numb_run = 1;
 numb_cv = 5;
 training_sample_percent = 0.001; % percentages of training sample
 selected_pose_numb = 3; % number of image used each user
-number_comparison = 1;
+number_comparison = 1; % number of pair comparison for each same class
 do_balance_class = 1;
+
+% PELM's parameters
+hiddenNodes = 10:10:100;
+regularizationC = power(10,-6:1:6);
+select_weight_type = 'random_select'; % random_select random_generate
+distFunction = 'euclidean'; % euclidean cosine
+combine_rule = {'distance', 'mean', 'multiply', 'sum'}; % distance mean multiply sum
 
 % Save path
 default_data_store_path = pwd;
@@ -26,6 +29,8 @@ default_data_store_path = [default_data_store_path(1:idcs(end)-1) ...
 saveFolderPath = {'Result', experiment_name, [experiment_name '_' sub_experiment_name]};
 filename = [saveFolderPath{end} '_' method_name];
 save_path = MakeChainFolder(saveFolderPath, 'target_path', default_data_store_path);
+
+clear idcs default_data_store_path saveFolderPath
 
 % %Load data
 [diveface_feature, diveface_label] = LoadDiveFaceFull();
@@ -41,12 +46,13 @@ for i = 1 : numel(id)
 end
 clear contain_image id i temp
 
+
 for random_seed = 1 : numb_run
     % Split dataset
     [training_id_index, test_id_index, data, user_index] = SplitDataset(diveface_label,...
         'training_sample_percent', training_sample_percent, 'random_seed', random_seed);
-    
-%     Subsampling test_id_index size to be equal to training_id_index size
+
+%         Subsampling test_id_index size to be equal to training_id_index size
     for i = 1 : size(test_id_index,1)
         for j = 1 : size(test_id_index,2)
             temp_train = training_id_index{i,j};
@@ -89,22 +95,27 @@ for random_seed = 1 : numb_run
     testDataX_2 = diveface_feature(test_pair_list(:,2),:);
     test_data_id = test_pair_list;
     testDataY = test_label_pair_list;
-    
+
     % Genarate k-fold indices
     [ kFoldIdx, ~ ] = GetKFoldIndices( numb_cv, trainingDataY, random_seed );
-    
+
     % Find optimal parameter
-    [foldLog, avgFoldLog] = dist_parallelCV(kFoldIdx, trainingDataX_1, trainingDataX_2, ...
-    	trainingDataY, training_data_id, 'distFunction', distFunction);
-    
+    [ foldLog, avgFoldLog ] = celmCV(kFoldIdx, ...
+        trainingDataX_1, trainingDataX_2, trainingDataY, training_data_id, ...
+        'seed', random_seed, 'hiddenNodes', hiddenNodes, ...
+        'regularizationC', regularizationC, 'distFunction', distFunction, ...
+        'select_weight_type', select_weight_type);
+
     % Test model
-    [trainingResult, testResult, testCorrectIdx] = TestDist_parallelParams( ...
+    [trainingResult, testResult, ~] = TestCELMParams( ...
         trainingDataX_1, trainingDataX_2, trainingDataY, training_data_id, ...
         testDataX_1, testDataX_2, testDataY, test_data_id, ...
-        'threshold', avgFoldLog.threshold(1), 'distFunction', distFunction);
-    
+        'hiddenNodes', avgFoldLog.hiddenNodes(1), 'distFunction', distFunction, ...
+        'regularizationC', avgFoldLog.regC(1), 'seed', random_seed, ...
+        'select_weight_type', select_weight_type);
+
     data_log(random_seed,:) = {foldLog trainingResult testResult};
-    
+
     clear training_id_index test_id_index data user_index
     clear training_pair_list training_label_pair_list
     clear test_pair_list test_label_pair_list
@@ -115,10 +126,13 @@ end
 
 % Save
 data_log = cell2table(data_log, 'variablenames', ...
-	{'foldLog' 'trainingResult' 'testResult'});
-my_filename = [filename '_' erase(num2str(training_sample_percent),".")];
+    {'foldLog' 'trainingResult' 'testResult'});
+my_filename = [filename '_' erase(num2str(training_sample_percent),".") ...
+    '_' select_weight_type];
 my_save_path = [save_path filesep my_filename];
 eval([my_filename ' = data_log;']);
 save(my_save_path, my_filename,'-v7.3');
 eval(['clear ' my_filename])
-clear data_log
+clear data_log my_filename my_save_path
+
+

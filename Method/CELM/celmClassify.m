@@ -1,21 +1,20 @@
-function [predictY, score, mdl, label_mat, trainingTime, testTime] = pelm2Classify(...
+function [predictY, score, mdl, label_mat, trainingTime, testTime] = celmClassify(...
     trainingDataX_1, trainingDataX_2, trainingDataY, trainingCode, ...
     testDataX_1, testDataX_2, testDataY, testFileNames, varargin)
-%PELM2CLASSIFY Summary of this function goes here
+%CELMCLASSIFY Summary of this function goes here
 %   Detailed explanation goes here
 
     distFunction = getAdditionalParam( 'distFunction', varargin, 'euclidean' );  % euclidean cosine
     balance = getAdditionalParam( 'balance', varargin, 1 );
     regularizationC = getAdditionalParam( 'regularizationC', varargin, 1 );
     hiddenNodes = getAdditionalParam( 'hiddenNodes', varargin, [100] );
-    combine_rule = getAdditionalParam( 'combine_rule', varargin, 'sum' ); % sum minus multiply distance mean
     seed = getAdditionalParam( 'seed', varargin, 1 );
     select_weight_type = getAdditionalParam( 'select_weight_type', varargin, 'random_select' ); % random_select random_generate
     
     class_name = categorical(categories(trainingDataY));
     [new_trainingDataY, ~] = grp2idx(trainingDataY);
     
-    [ trainingDataXX ] = combine_training_data(trainingDataX_1, trainingDataX_2, combine_rule);
+    [ trainingDataXX ] = combine_training_data(trainingDataX_1, trainingDataX_2);
     [ W, W_code ] = initHidden( hiddenNodes , trainingDataXX , seed, trainingCode, select_weight_type );
     
     tic
@@ -23,7 +22,7 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = pelm2Classi
         regularizationC, balance, distFunction);
     trainingTime = toc;
     
-    [ testDataXX ] = combine_training_data(testDataX_1, testDataX_2, combine_rule);
+    [ testDataXX ] = combine_training_data(testDataX_1, testDataX_2);
     
     tic
     [predictY] = testWELM(testDataXX, W, beta, distFunction);
@@ -38,20 +37,11 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = pelm2Classi
         'VariableNames', {'filenames' 'labels', 'predict_labels'});
     
     mdl = table(W_code, beta);
+
 end
 
-function [ HH ] = combine_training_data(XX_1, XX_2, cr)
-    if strcmp(cr, 'sum')
-        HH = XX_1 + XX_2;
-    elseif strcmp(cr, 'minus')
-        HH = XX_1 - XX_2;
-    elseif strcmp(cr, 'multiply')
-        HH = XX_1 .* XX_2; 
-    elseif strcmp(cr, 'distance')
-        HH = abs(XX_1 - XX_2);
-    elseif strcmp(cr, 'mean')
-        HH = (XX_1 + XX_2)/2;
-    end
+function [ HH ] = combine_training_data(XX_1, XX_2)
+    HH = [XX_1, XX_2];
 end
 
 function [ W, W_code ] = initHidden( h , X , seed, code, weighttype )
@@ -67,7 +57,6 @@ function [ W, W_code ] = initHidden( h , X , seed, code, weighttype )
         W = rand(h_size, size(X,2));
         W_code = repmat(seed, h_size, size(code,2));
     end
-    
 end
 
 function [beta] = trainWELM_onevsall(XX, T, W, regularizationC, balance, distFunction )
