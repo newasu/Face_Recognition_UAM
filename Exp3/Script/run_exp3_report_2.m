@@ -4,14 +4,12 @@ exp3_A_pelm2_distance(2) = Exp3_A_pelm2_0005_distance_random_select.testResult.s
 exp3_A_pelm2_distance(3) = Exp3_A_pelm2_001_distance_random_select.testResult.score{1};
 exp3_A_pelm2_distance(4) = Exp3_A_pelm2_005_distance_random_select.testResult.score{1};
 exp3_A_pelm2_distance(5) = Exp3_A_pelm2_01_distance_random_select.testResult.score{1};
-exp3_A_pelm2_distance(6) = Exp3_A_pelm2_02_distance_random_select.testResult.score{1};
 
 exp3_A_pelm2_mean(1) = Exp3_A_pelm2_0001_mean_random_select.testResult.score{1};
 exp3_A_pelm2_mean(2) = Exp3_A_pelm2_0005_mean_random_select.testResult.score{1};
 exp3_A_pelm2_mean(3) = Exp3_A_pelm2_001_mean_random_select.testResult.score{1};
 exp3_A_pelm2_mean(4) = Exp3_A_pelm2_005_mean_random_select.testResult.score{1};
 exp3_A_pelm2_mean(5) = Exp3_A_pelm2_01_mean_random_select.testResult.score{1};
-exp3_A_pelm2_mean(6) = Exp3_A_pelm2_02_mean_random_select.testResult.score{1};
 
 exp3_A_pelm2_multiply(1) = Exp3_A_pelm2_0001_multiply_random_select.testResult.score{1};
 exp3_A_pelm2_multiply(2) = Exp3_A_pelm2_0005_multiply_random_select.testResult.score{1};
