@@ -77,11 +77,12 @@ for combine_rule_round = 1 : numel(combine_rule)
             'selected_pose_numb', selected_pose_numb);
 
         % Subsampling to balance dataset
+        % Need to fix!! Should remove same number for each person, not random remove.
         if do_balance_class
-            [training_pair_list, training_label_pair_list] = BalanceClasses(...
-                training_pair_list, training_label_pair_list, 'random_seed', random_seed);
-            [test_pair_list, test_label_pair_list] = BalanceClasses(...
-                test_pair_list, test_label_pair_list, 'random_seed', random_seed);
+            [training_pair_list, training_label_pair_list] = BalanceClass4Positive(...
+                training_pair_list, training_label_pair_list, diveface_label, 'random_seed', random_seed);
+            [test_pair_list, test_label_pair_list] = BalanceClass4Positive(...
+                test_pair_list, test_label_pair_list, diveface_label, 'random_seed', random_seed);
         end
 
         % Training data

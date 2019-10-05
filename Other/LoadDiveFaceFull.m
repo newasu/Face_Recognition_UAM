@@ -29,8 +29,18 @@ function [raw_feature, label] = LoadDiveFaceFull(varargin)
 
         %column 1= Gender (0 Male, 1 Female), column 2= Ethnicity (0 Black, 1 Asian, 2 Caucasian) column 3= ID
         raw_label = csvread([diveface_path 'attributes_full_dataset.csv']); 
-
-    %     raw_label_filename = importdata([diveface_path 'files.txt']);
+        
+        % Read file name labels
+%         raw_label_filename = importdata([diveface_path 'files.txt']);
+        temp = strfind(dataset_path, filesep);
+        temp = [dataset_path(1:temp(end)) 'label_filenames.txt'];
+        fileID = fopen(temp);
+        raw_filename = textscan(fileID,'%s');
+        fclose(fileID);
+        raw_filename = raw_filename{1};
+        [raw_filepath, raw_filename, raw_fileextension] = cellfun(@(x) ...
+            fileparts(x), raw_filename, 'UniformOutput', false);
+        clear temp fileID
 
     %     Remove row and column header
         raw_feature(1,:) = [];
@@ -50,6 +60,9 @@ function [raw_feature, label] = LoadDiveFaceFull(varargin)
         % Sort by user id and pose id
         [my_data_label, sortIndex] = sortrows(raw_label, id_index);
         raw_feature = raw_feature(sortIndex, :);
+        raw_filepath = raw_filepath(sortIndex);
+        raw_filename = raw_filename(sortIndex);
+        raw_fileextension = raw_fileextension(sortIndex);
         id = unique(my_data_label(:, id_index));
         my_data_label = [my_data_label zeros(size(raw_label,1),1)];
         for i = 1 : numel(id)
@@ -68,8 +81,8 @@ function [raw_feature, label] = LoadDiveFaceFull(varargin)
 
         % Bind into table
         label = table(gender, ethnicity, my_data_label(:, id_index),...
-            my_data_label(:, pose_index), raw_label_filename, data_id',...
-            'VariableNames', {'gender', 'ethnicity', 'id', 'pose', 'filename', 'data_id'});
+            my_data_label(:, pose_index), data_id', raw_filepath, raw_filename, raw_fileextension,...
+            'VariableNames', {'gender', 'ethnicity', 'id', 'pose', 'data_id', 'filepath', 'filename', 'fileext'});
     end
     
 end

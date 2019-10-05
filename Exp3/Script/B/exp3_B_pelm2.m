@@ -1,4 +1,4 @@
-% exp3 B classify Is that same person by linear PELM2
+% exp3 B classify Is that same person by cosine PELM2
 
 clear all
 

@@ -1,0 +1,10 @@
+Face_Recognition_UAM > Exp4
+
+Objective:
+classify task Is that same or different person for journal, 10-fold CV is used for dataset separation
+and 5-fold for finding optimal parameters:
+
+- Exp4_A: observe performances on CV technique by PELM.
+	- vary number of hidden nodes [10:10:100]
+	- vary number of regC [power(10,-6:1:6)]
+    - WELM euclidean kernel
