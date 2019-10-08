@@ -52,7 +52,7 @@ disp('Removed error users');
     'number_sub_dataset', number_subdataset);
 
 % Test
-subdataset = cellfun(@(x) x(1:50,:), subdataset, 'UniformOutput', false);
+subdataset = cellfun(@(x) x(1:10,:), subdataset, 'UniformOutput', false);
 
 for experiment_round = do_experiment
     for combine_rule = 1 : numel(all_combine_rule)
@@ -68,8 +68,9 @@ for experiment_round = do_experiment
             end
         end
         
-        % Load Paired sample list
-        temp_paired_list_save_path = [paired_list_save_path filesep 'paired_list_' num2str(experiment_round)];
+        % Load training paired sample list
+        temp_paired_list_save_path = [paired_list_save_path filesep ...
+            'training_paired_list_' num2str(experiment_round)];
         if exist([temp_paired_list_save_path '.mat'], 'file')
             load(temp_paired_list_save_path);
         else
@@ -77,6 +78,18 @@ for experiment_round = do_experiment
                 training_set_sample_idx, subdataset_label, diveface_label,...
                 'random_seed', experiment_round);
             save(temp_paired_list_save_path, 'training_pair_list', 'training_pair_list_label','-v7.3');
+        end
+        
+        % Load test paired sample list
+        temp_paired_list_save_path = [paired_list_save_path filesep ...
+            'test_paired_list_' num2str(experiment_round)];
+        if exist([temp_paired_list_save_path '.mat'], 'file')
+            load(temp_paired_list_save_path);
+        else
+            [test_pair_list, test_pair_list_label] = PairSampleClassesEqually(...
+                test_set_sample_idx, subdataset_label, diveface_label,...
+                'random_seed', experiment_round);
+            save(temp_paired_list_save_path, 'test_pair_list', 'test_pair_list_label','-v7.3');
         end
         
     end
