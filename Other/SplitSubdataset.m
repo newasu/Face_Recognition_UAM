@@ -21,7 +21,7 @@ function [subdataset, subdataset_label] = SplitSubdataset(sample_id, data_label,
     
     % Random data
     my_random_seed = random_seed;
-    for i = 1 : numel(my_splited_classes_label)
+    for i = 1 : size(my_splited_classes_label, 1)
         ttemp = sum(~isnan(my_splited_classes(:,i)));
         temp = myRandom(ttemp, my_random_seed);
         my_splited_classes(1:ttemp,i) = my_splited_classes(temp,i);
@@ -60,6 +60,8 @@ function [splited_classes, unique_concat_label] = SplitConcatClasses(my_sample_i
         ttemp = my_concat_label == unique_my_concat_label(ii);
         splited_classes(1:sum(ttemp),ii) = my_sample_id(ttemp);
     end
+    
+    unique_concat_label = split(unique_concat_label, '_');
 end
 
 

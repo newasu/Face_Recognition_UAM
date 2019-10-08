@@ -85,5 +85,6 @@ function [raw_feature, label] = LoadDiveFaceFull(varargin)
             'VariableNames', {'gender', 'ethnicity', 'id', 'pose', 'data_id', 'filepath', 'filename', 'fileext'});
     end
     
+    disp('Loaded DiveFace..');
 end
 
