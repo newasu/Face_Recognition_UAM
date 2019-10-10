@@ -1,4 +1,4 @@
-function [paired_list, paired_list_label] = PairSampleClassesEqually(data, data_label, dataset_label, varargin)
+function [paired_labels] = PairSampleClassesEqually(data, data_label, dataset_label, varargin)
 %PAIRSAMPLECLASSESEQUALLY Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -29,6 +29,9 @@ function [paired_list, paired_list_label] = PairSampleClassesEqually(data, data_
 
     temp_pair = [];
     temp_pair_label = [];
+    temp_id = [];
+    temp_pose = [];
+    temp_add_order = [];
 
     % Pair class same
     disp('Pairing class of same..');
@@ -37,15 +40,33 @@ function [paired_list, paired_list_label] = PairSampleClassesEqually(data, data_
         consider_data = data(ii);
         if ~isnan(consider_data)
             % find considered user in dataset
-            temp_idx = dataset_label.id == consider_data;
+            temp_idx = find(dataset_label.id == consider_data);
             % find data_id of user
             consider_data_in_table = dataset_label.data_id(temp_idx);
-            temp = nchoosek(consider_data_in_table, 2);
-            temp_pair = [temp_pair; temp];
-            temp = [repmat(my_label(1), 3, 1) ...
-                dataset_label.gender(temp_idx) dataset_label.ethnicity(temp_idx) ...
-                dataset_label.gender(temp_idx) dataset_label.ethnicity(temp_idx)];
-            temp_pair_label = [temp_pair_label; temp];
+            temp_temp = nchoosek(consider_data_in_table, 2);
+            
+            % bind into list
+            for jj = 1 : numel(consider_data_in_table)
+                temp_pair = [temp_pair; temp_temp(jj,:)];
+                temp = [my_label(1) ...
+                    dataset_label.gender(temp_idx(jj)) dataset_label.ethnicity(temp_idx(jj)) ...
+                    dataset_label.gender(temp_idx(jj)) dataset_label.ethnicity(temp_idx(jj))];
+                temp_pair_label = [temp_pair_label; temp];
+                temp_id = [temp_id; consider_data consider_data];
+                temp_pose = [temp_pose; ...
+                    dataset_label.pose(dataset_label.data_id == temp_temp(jj,1)) ...
+                    dataset_label.pose(dataset_label.data_id == temp_temp(jj,2))];
+                temp_add_order(end+1) = numel(temp_add_order) + 1;
+                
+                disp(['Paired: ' num2str(numel(temp_add_order)) '/' total_round]);
+            end
+            
+%             temp_pair = [temp_pair; temp];
+%             temp = [repmat(my_label(1), 3, 1) ...
+%                 dataset_label.gender(temp_idx) dataset_label.ethnicity(temp_idx) ...
+%                 dataset_label.gender(temp_idx) dataset_label.ethnicity(temp_idx)];
+%             temp_pair_label = [temp_pair_label; temp];
+%             temp_id = [temp_id; repmat(consider_data, 3, 1) repmat(consider_data, 3, 1)];
         end
     end
     clear consider_data consider_data_in_table temp_idx temp
@@ -111,11 +132,18 @@ function [paired_list, paired_list_label] = PairSampleClassesEqually(data, data_
                                         temp.gender ...
                                         temp.ethnicity];
                                     temp_pair_label = [temp_pair_label; temp];
+                                    temp_id = [temp_id; consider_data temp_temp_sample_id(temp_temp_idx)];
+                                    temp_pose = [temp_pose; ...
+                                        dataset_label.pose(dataset_label.data_id == consider_data_in_table(jj)) ...
+                                        temp_temp_sample_pose(temp_temp_idx)];
+                                    temp_add_order(end+1) = numel(temp_add_order) + 1;
+                                    
                                     % move used element to last element in vector
                                     temp_temp_sample_id(end+1) = temp_temp_sample_id(temp_temp_idx);
                                     temp_temp_sample_id(temp_temp_idx) = [];
                                     temp_temp_sample_pose(end+1) = temp_temp_sample_pose(temp_temp_idx);
                                     temp_temp_sample_pose(temp_temp_idx) = [];
+                                    
                                     % stop while
                                     temp_flag = 0;
                                     
@@ -134,8 +162,15 @@ function [paired_list, paired_list_label] = PairSampleClassesEqually(data, data_
         end
     end
 
-    paired_list = temp_pair;
-    paired_list_label = temp_pair_label;
+    paired_labels = table(temp_pair_label(:,1), ...
+        temp_id(:,1), temp_pair(:,1), temp_pose(:,1), temp_pair_label(:,2), temp_pair_label(:,3),...
+        temp_id(:,2), temp_pair(:,2), temp_pose(:,2), temp_pair_label(:,4), temp_pair_label(:,5),...
+        temp_add_order', ...
+        'variablenames', {'paired_label', ...
+        'master_id', 'master_data_id', 'master_pose', 'master_gender', 'master_ethnicity', ...
+        'paired_id', 'paired_data_id', 'paired_pose', 'paired_gender', 'paired_ethnicity', ...
+        'added_order'});
+    
 end
 
 function rn = myRandom(elementNumb, seed)
