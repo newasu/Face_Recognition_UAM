@@ -4,13 +4,13 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = pelm2Classi
 %PELM2CLASSIFY Summary of this function goes here
 %   Detailed explanation goes here
 
-    distFunction = getAdditionalParam( 'distFunction', varargin, 'euclidean' );  % euclidean cosine
+    distFunction = getAdditionalParam( 'distFunction', varargin, 'euclidean' );  % euclidean cosine euclideanmm
     balance = getAdditionalParam( 'balance', varargin, 1 );
     regularizationC = getAdditionalParam( 'regularizationC', varargin, 1 );
     hiddenNodes = getAdditionalParam( 'hiddenNodes', varargin, [100] );
     combine_rule = getAdditionalParam( 'combine_rule', varargin, 'sum' ); % sum minus multiply distance mean
     seed = getAdditionalParam( 'seed', varargin, 1 );
-    select_weight_type = getAdditionalParam( 'select_weight_type', varargin, 'random_select' ); % random_select random_generate
+    select_weight_type = getAdditionalParam( 'select_weight_type', varargin, 'randomselect' ); % randomselect randomgenerate
     
     class_name = categorical(categories(trainingDataY));
     [new_trainingDataY, ~] = grp2idx(trainingDataY);
@@ -33,6 +33,21 @@ function [predictY, score, mdl, label_mat, trainingTime, testTime] = pelm2Classi
     predictY = class_name(round(predictY));
     
     [~,score,~] = my_confusion.getMatrix(double(testDataY),double(predictY),0);
+    
+    % AUC
+    auc = [];
+    for ii = 1 : numel(class_name)
+        temp = testDataY==class_name(ii);
+        [~,~,~,auc(ii)] = perfcurve(temp, predict_score(:,ii),1);
+    end
+    score.AUC = sum(auc)/numel(class_name);
+    
+    % biometric score
+    [biometric_perf_threshold, biometric_perf_mat] = exp3_report_biometric_perf(...
+        testDataY, predictY, predict_score(:, find(class_name == 'same')), 'same');
+    score.EER = biometric_perf_mat.EER;
+    score.FMR_0d1 = biometric_perf_mat.FMR_0d1;
+    score.FMR_0d01 = biometric_perf_mat.FMR_0d01;
     
     label_mat = table(testFileNames, testDataY, predictY, predict_score, ...
         'VariableNames', {'filenames' 'labels', 'predict_labels', 'predict_score'});
@@ -59,11 +74,11 @@ function [ W, W_code ] = initHidden( h , X , seed, code, weighttype )
     h_size = round((h/100) * X_size_row);
     h_size = min(X_size_row, h_size);
     SetRandomSeed(seed);
-    if strcmp(weighttype, 'random_select')
+    if strcmp(weighttype, 'randomselect')
         random_pick_index = randperm(size(X,1),h_size);
         W = X(random_pick_index, :);
         W_code = code(random_pick_index, :);
-    else % random_generate
+    else % random-generate
         W = rand(h_size, size(X,2));
         W_code = repmat(seed, h_size, size(code,2));
     end
@@ -132,13 +147,128 @@ function [ HH ] = simKernel(XX, WW, distFunc)
                 if gpuDeviceCount > 0 
                     temp_XX = gpuArray(temp_XX);
                     temp_WW = gpuArray(temp_WW);
+                    
+                    HH(ii_s_idx:ii_e_idx, jj_s_idx:jj_e_idx) ...
+                        = gather(pdist2(temp_XX, temp_WW, distFunc));
+                else
+                    HH(ii_s_idx:ii_e_idx, jj_s_idx:jj_e_idx) ...
+                        = pdist2(temp_XX, temp_WW, distFunc);
                 end
                 
-                HH(ii_s_idx:ii_e_idx, jj_s_idx:jj_e_idx) ...
-                    = gather(pdist2(temp_XX, temp_WW, distFunc));
+                
                 
                 clear temp_XX temp_WW
             end
+            
+            if ii_round > 1
+                disp(['Calculating kernel: ' num2str(ii) '/' num2str(ii_round)]);
+            end
+            
+        end
+        
+    elseif strcmp(distFunc, 'euclideanmm')
+        disp('Calculating Euclidean mm kernel..');
+        
+        % gpu array if available
+        if gpuDeviceCount == 0
+        	XXXX = sum(XX.^2, 2);
+            XXWW = XX * WW';
+            WWWW = sum(WW.^2, 2)';
+            HH = sqrt(bsxfun(@plus, WWWW, bsxfun(@minus, XXXX, 2 * XXWW)));
+            HH = real(HH);
+         
+        else
+            round_step = 20000;
+            
+            XXXX = [];
+            for iii = 1 : ceil(size(XX,1)/round_step)
+                % start idx
+                start_idx = ((iii-1) * round_step) + 1;
+                if (start_idx + round_step - 1) < size(XX,1)
+                    start_idx = start_idx : (start_idx + round_step - 1);
+                else
+                    start_idx = start_idx : (start_idx + mod(size(XX,1),round_step) - 1);
+                end
+
+                % calculate
+                temp = gpuArray(XX(start_idx,:));
+%                 % gpu array if available
+%                 if gpuDeviceCount > 0
+%                     temp = gpuArray(temp);
+%                 end
+                XXXX(start_idx, 1) = gather(sum(temp.^2, 2));
+                clear temp
+            end
+
+            XXWW = [];
+            for iii = 1 : size(XX,1)
+                for jjj = 1 : ceil(size(WW,1)/round_step)
+                    % start idx
+                    start_idx = ((jjj-1) * round_step) + 1;
+                    if (start_idx + round_step - 1) < size(WW,1)
+                        start_idx = start_idx : (start_idx + round_step - 1);
+                    else
+                        start_idx = start_idx : (start_idx + mod(size(WW,1),round_step) - 1);
+                    end
+
+                    % calculate
+                    temp_XX = gpuArray(XX(iii,:));
+                    temp_WW = gpuArray(WW(start_idx,:));
+%                     % gpu array if available
+%                     if gpuDeviceCount > 0
+%                         temp_XX = gpuArray(temp_XX);
+%                         temp_WW = gpuArray(temp_WW);
+%                     end
+                    XXWW(iii,start_idx) = gather(temp_XX * temp_WW');
+                    clear temp_XX temp_WW
+                end
+            end
+
+            WWWW = [];
+            for iii = 1 : ceil(size(WW,1)/round_step)
+                % start idx
+                start_idx = ((iii-1) * round_step) + 1;
+                if (start_idx + round_step - 1) < size(WW,1)
+                    start_idx = start_idx : (start_idx + round_step - 1);
+                else
+                    start_idx = start_idx : (start_idx + mod(size(WW,1),round_step) - 1);
+                end
+
+                % calculate
+                temp = gpuArray(WW(start_idx,:));
+%                 % gpu array if available
+%                 if gpuDeviceCount > 0
+%                     temp = gpuArray(temp);
+%                 end
+                WWWW(start_idx) = gather(sum(temp.^2, 2)');
+                clear temp
+            end
+
+            XXXX = gpuArray(XXXX);
+            WWWW = gpuArray(WWWW);
+%             if gpuDeviceCount > 0
+%                 XXXX = gpuArray(XXXX);
+%                 WWWW = gpuArray(WWWW);
+%             end
+
+            HH = [];
+            for iii = 1 : size(XXWW,1)
+                temp = gpuArray(XXWW(iii,:));
+%                 if gpuDeviceCount > 0
+%                     temp = gpuArray(temp);
+%                 end
+
+                temp = sqrt( WWWW + (XXXX(iii) - (2*temp)) );
+                
+                temp = gather(temp);
+%                 if gpuDeviceCount > 0
+%                     temp = gather(temp);
+%                 end
+
+                HH(iii,:) = temp;
+            end
+            HH = real(HH);
+            clear XXXX WWWW temp
         end
         
     else % linear

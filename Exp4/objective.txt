@@ -8,3 +8,10 @@ and 5-fold for finding optimal parameters:
 	- vary number of hidden nodes [10:10:100]
 	- vary number of regC [power(10,-6:1:6)]
     - WELM euclidean kernel
+
+- Exp4_B: observe performances by Euclidean euclidean.
+
+- Exp4_C: observe performances by Concatenated ELM.
+    - vary number of hidden nodes [10:10:100]
+	- vary number of regC [power(10,-6:1:6)]
+    - WELM euclidean kernel

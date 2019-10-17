@@ -8,7 +8,7 @@ classdef my_confusion
             %1.C-matrix-Confution Matrix
             %2.Result-Struct Over all output Which has follwing
             %3.RefereceResult indidual output Which has follwing
-            %%%%%%%%1acuuracy
+            %%%%%%%%1.acuuracy
             %%%%%%%%2.error
             %%%%%%%%3.Sensitivity (Recall or True positive rate)
             %%%%%%%%4.Specificity
@@ -62,12 +62,12 @@ classdef my_confusion
             condition=length(un_actual)==length(un_predict);
             
             if ~condition
-                warning('Class List is not same in given inputs')
+%                 warning('Class List is not same in given inputs')
             end
 %             condition=(sum(un_actual==un_predict)==length(un_actual));
             condition=isequal(un_actual, un_predict);
             if ~condition
-                warning('Class List in given inputs are different')
+%                 warning('Class List in given inputs are different')
             end
             
             %%
