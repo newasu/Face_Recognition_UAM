@@ -109,13 +109,22 @@ function [beta] = trainWELM_onevsall(XX, T, W, regularizationC, balance, distFun
 end
 
 function [ HH ] = simKernel(XX, WW, distFunc)
-	if strcmp(distFunc, 'cosine') || strcmp(distFunc, 'jaccard') || ...
-            strcmp(distFunc, 'squaredeuclidean') || strcmp(distFunc, 'euclidean') % distance
+    gpu_round_step = 24000;
+    
+    if strcmp(distFunc, 'euclidean') || gpuDeviceCount > 0 || size(XX,1) <= gpu_round_step
+        XXXX = sum(XX.^2, 2);
+        XXWW = XX * WW';
+        WWWW = sum(WW.^2, 2)';
+        HH = sqrt(bsxfun(@plus, WWWW, bsxfun(@minus, XXXX, 2 * XXWW)));
+        HH = real(HH);
+        
+    elseif strcmp(distFunc, 'cosine') || strcmp(distFunc, 'jaccard') || ...
+        strcmp(distFunc, 'squaredeuclidean') || strcmp(distFunc, 'euclidean') % distance
         
         if gpuDeviceCount > 0
 %             my_gpuDevice = gpuDevice(1);
 %             round_step = round(sqrt(my_gpuDevice.AvailableMemory*0.25));
-            round_step = 20000;
+            round_step = gpu_round_step;
         else
             round_step = 100000000000;
         end
@@ -166,111 +175,111 @@ function [ HH ] = simKernel(XX, WW, distFunc)
             
         end
         
-    elseif strcmp(distFunc, 'euclideanmm')
-        disp('Calculating Euclidean mm kernel..');
-        
-        % gpu array if available
-        if gpuDeviceCount == 0
-        	XXXX = sum(XX.^2, 2);
-            XXWW = XX * WW';
-            WWWW = sum(WW.^2, 2)';
-            HH = sqrt(bsxfun(@plus, WWWW, bsxfun(@minus, XXXX, 2 * XXWW)));
-            HH = real(HH);
-         
-        else
-            round_step = 20000;
-            
-            XXXX = [];
-            for iii = 1 : ceil(size(XX,1)/round_step)
-                % start idx
-                start_idx = ((iii-1) * round_step) + 1;
-                if (start_idx + round_step - 1) < size(XX,1)
-                    start_idx = start_idx : (start_idx + round_step - 1);
-                else
-                    start_idx = start_idx : (start_idx + mod(size(XX,1),round_step) - 1);
-                end
-
-                % calculate
-                temp = gpuArray(XX(start_idx,:));
-%                 % gpu array if available
-%                 if gpuDeviceCount > 0
-%                     temp = gpuArray(temp);
+%     elseif strcmp(distFunc, 'euclideanmm')
+%         disp('Calculating Euclidean mm kernel..');
+%         
+%         % gpu array if available
+%         if gpuDeviceCount == 0
+%         	XXXX = sum(XX.^2, 2);
+%             XXWW = XX * WW';
+%             WWWW = sum(WW.^2, 2)';
+%             HH = sqrt(bsxfun(@plus, WWWW, bsxfun(@minus, XXXX, 2 * XXWW)));
+%             HH = real(HH);
+%          
+%         else
+%             round_step = 20000;
+%             
+%             XXXX = [];
+%             for iii = 1 : ceil(size(XX,1)/round_step)
+%                 % start idx
+%                 start_idx = ((iii-1) * round_step) + 1;
+%                 if (start_idx + round_step - 1) < size(XX,1)
+%                     start_idx = start_idx : (start_idx + round_step - 1);
+%                 else
+%                     start_idx = start_idx : (start_idx + mod(size(XX,1),round_step) - 1);
 %                 end
-                XXXX(start_idx, 1) = gather(sum(temp.^2, 2));
-                clear temp
-            end
-
-            XXWW = [];
-            for iii = 1 : size(XX,1)
-                for jjj = 1 : ceil(size(WW,1)/round_step)
-                    % start idx
-                    start_idx = ((jjj-1) * round_step) + 1;
-                    if (start_idx + round_step - 1) < size(WW,1)
-                        start_idx = start_idx : (start_idx + round_step - 1);
-                    else
-                        start_idx = start_idx : (start_idx + mod(size(WW,1),round_step) - 1);
-                    end
-
-                    % calculate
-                    temp_XX = gpuArray(XX(iii,:));
-                    temp_WW = gpuArray(WW(start_idx,:));
-%                     % gpu array if available
-%                     if gpuDeviceCount > 0
-%                         temp_XX = gpuArray(temp_XX);
-%                         temp_WW = gpuArray(temp_WW);
-%                     end
-                    XXWW(iii,start_idx) = gather(temp_XX * temp_WW');
-                    clear temp_XX temp_WW
-                end
-            end
-
-            WWWW = [];
-            for iii = 1 : ceil(size(WW,1)/round_step)
-                % start idx
-                start_idx = ((iii-1) * round_step) + 1;
-                if (start_idx + round_step - 1) < size(WW,1)
-                    start_idx = start_idx : (start_idx + round_step - 1);
-                else
-                    start_idx = start_idx : (start_idx + mod(size(WW,1),round_step) - 1);
-                end
-
-                % calculate
-                temp = gpuArray(WW(start_idx,:));
-%                 % gpu array if available
-%                 if gpuDeviceCount > 0
-%                     temp = gpuArray(temp);
-%                 end
-                WWWW(start_idx) = gather(sum(temp.^2, 2)');
-                clear temp
-            end
-
-            XXXX = gpuArray(XXXX);
-            WWWW = gpuArray(WWWW);
-%             if gpuDeviceCount > 0
-%                 XXXX = gpuArray(XXXX);
-%                 WWWW = gpuArray(WWWW);
+% 
+%                 % calculate
+%                 temp = gpuArray(XX(start_idx,:));
+% %                 % gpu array if available
+% %                 if gpuDeviceCount > 0
+% %                     temp = gpuArray(temp);
+% %                 end
+%                 XXXX(start_idx, 1) = gather(sum(temp.^2, 2));
+%                 clear temp
 %             end
-
-            HH = [];
-            for iii = 1 : size(XXWW,1)
-                temp = gpuArray(XXWW(iii,:));
-%                 if gpuDeviceCount > 0
-%                     temp = gpuArray(temp);
+% 
+%             XXWW = [];
+%             for iii = 1 : size(XX,1)
+%                 for jjj = 1 : ceil(size(WW,1)/round_step)
+%                     % start idx
+%                     start_idx = ((jjj-1) * round_step) + 1;
+%                     if (start_idx + round_step - 1) < size(WW,1)
+%                         start_idx = start_idx : (start_idx + round_step - 1);
+%                     else
+%                         start_idx = start_idx : (start_idx + mod(size(WW,1),round_step) - 1);
+%                     end
+% 
+%                     % calculate
+%                     temp_XX = gpuArray(XX(iii,:));
+%                     temp_WW = gpuArray(WW(start_idx,:));
+% %                     % gpu array if available
+% %                     if gpuDeviceCount > 0
+% %                         temp_XX = gpuArray(temp_XX);
+% %                         temp_WW = gpuArray(temp_WW);
+% %                     end
+%                     XXWW(iii,start_idx) = gather(temp_XX * temp_WW');
+%                     clear temp_XX temp_WW
 %                 end
-
-                temp = sqrt( WWWW + (XXXX(iii) - (2*temp)) );
-                
-                temp = gather(temp);
-%                 if gpuDeviceCount > 0
-%                     temp = gather(temp);
+%             end
+% 
+%             WWWW = [];
+%             for iii = 1 : ceil(size(WW,1)/round_step)
+%                 % start idx
+%                 start_idx = ((iii-1) * round_step) + 1;
+%                 if (start_idx + round_step - 1) < size(WW,1)
+%                     start_idx = start_idx : (start_idx + round_step - 1);
+%                 else
+%                     start_idx = start_idx : (start_idx + mod(size(WW,1),round_step) - 1);
 %                 end
-
-                HH(iii,:) = temp;
-            end
-            HH = real(HH);
-            clear XXXX WWWW temp
-        end
-        
+% 
+%                 % calculate
+%                 temp = gpuArray(WW(start_idx,:));
+% %                 % gpu array if available
+% %                 if gpuDeviceCount > 0
+% %                     temp = gpuArray(temp);
+% %                 end
+%                 WWWW(start_idx) = gather(sum(temp.^2, 2)');
+%                 clear temp
+%             end
+% 
+%             XXXX = gpuArray(XXXX);
+%             WWWW = gpuArray(WWWW);
+% %             if gpuDeviceCount > 0
+% %                 XXXX = gpuArray(XXXX);
+% %                 WWWW = gpuArray(WWWW);
+% %             end
+% 
+%             HH = [];
+%             for iii = 1 : size(XXWW,1)
+%                 temp = gpuArray(XXWW(iii,:));
+% %                 if gpuDeviceCount > 0
+% %                     temp = gpuArray(temp);
+% %                 end
+% 
+%                 temp = sqrt( complex( WWWW + (XXXX(iii) - (2*temp)) ) );
+%                 
+%                 temp = gather(temp);
+% %                 if gpuDeviceCount > 0
+% %                     temp = gather(temp);
+% %                 end
+% 
+%                 HH(iii,:) = temp;
+%             end
+%             HH = real(HH);
+%             clear XXXX WWWW temp
+%         end
+%         
     else % linear
         if gpuDeviceCount > 0
             XX = gpuArray(XX);

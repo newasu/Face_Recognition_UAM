@@ -4,7 +4,7 @@ clear all
 
 % Settings
 
-experiment_mode = 'test';
+experiment_mode = '';
 experiment_name = 'Exp4';
 sub_experiment_name = 'A';
 method_name = 'pelm';
@@ -17,7 +17,7 @@ numb_cv = 5; % cv for optimal parameters
 hiddenNodes = 10:10:100;
 regularizationC = power(10,-6:1:6);
 select_weight_type = 'randomselect'; % randomselect randomgenerate
-distFunction = 'euclideanmm'; % euclidean cosine euclideanmm
+distFunction = 'euclidean'; % euclidean cosine euclideanmm
 all_combine_rule = {'distance', 'mean', 'multiply', 'sum'}; % distance mean multiply sum
 % all_combine_rule = {'distance', 'mean'};
 
