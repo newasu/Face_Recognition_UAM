@@ -109,13 +109,19 @@ function [beta] = trainWELM_onevsall(XX, T, W, regularizationC, balance, distFun
 end
 
 function [ HH ] = simKernel(XX, WW, distFunc)
-    gpu_round_step = 24000;
+    gpu_round_step = 20000;
     
-    if strcmp(distFunc, 'euclidean') || gpuDeviceCount > 0 || size(XX,1) <= gpu_round_step
-        XXXX = sum(XX.^2, 2);
-        XXWW = XX * WW';
-        WWWW = sum(WW.^2, 2)';
-        HH = sqrt(bsxfun(@plus, WWWW, bsxfun(@minus, XXXX, 2 * XXWW)));
+    if strcmp(distFunc, 'euclidean') && gpuDeviceCount > 0 ...
+            && size(XX,1) <= gpu_round_step && size(WW,1) <= gpu_round_step
+        XXXX = (sum(gpuArray(XX).^2, 2));
+        XXWW = (gpuArray(XX) * gpuArray(WW)');
+        WWWW = (sum(gpuArray(WW).^2, 2)');
+        HH = bsxfun(@minus, XXXX, 2 * XXWW);
+        clear XXXX XXWW
+        HH = bsxfun(@plus, WWWW, HH);
+        clear WWWW
+        HH = gather(HH);
+        HH = sqrt(HH);
         HH = real(HH);
         
     elseif strcmp(distFunc, 'cosine') || strcmp(distFunc, 'jaccard') || ...

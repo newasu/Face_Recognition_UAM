@@ -8,7 +8,7 @@ experiment_mode = '';
 experiment_name = 'Exp4';
 sub_experiment_name = 'A';
 method_name = 'pelm';
-do_experiment = [1 2 3 4 5 6 7 8 9 10]; % run experiment number
+do_experiment = [1 2]; % run experiment number
 
 number_subdataset = 10;
 numb_cv = 5; % cv for optimal parameters
