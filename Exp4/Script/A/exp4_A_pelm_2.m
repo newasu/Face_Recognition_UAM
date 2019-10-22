@@ -252,8 +252,8 @@ for experiment_round = do_experiment
             end
             
             best_hiddenNodes = avgFoldLog.hiddenNodes(1);
-            best_regC = avgFoldLog.hiddenNodes(1);
-            clear avgFoldLog
+            best_regC = avgFoldLog.regC(1);
+            clear avgFoldLog data_log
 
             % Test model
             disp('Testing model..');
