@@ -1,4 +1,4 @@
-% exp4 B classify Is that same person by celm
+% exp4 A classify Is that same person by euclidean CELM
 
 clear all
 
@@ -17,7 +17,7 @@ numb_cv = 5; % cv for optimal parameters
 hiddenNodes = 10:10:100;
 regularizationC = power(10,-6:1:6);
 select_weight_type = 'randomselect'; % randomselect randomgenerate
-distFunction = 'euclideanmm'; % euclidean cosine euclideanmm
+distFunction = 'euclidean'; % euclidean cosine
 
 % Save path
 default_data_store_path = pwd;
@@ -200,20 +200,20 @@ for experiment_round = do_experiment
     % Training data
     trainingDataX_1 = cell2mat(arrayfun(@(x) find(x==diveface_data_id), ...
         training_paired_label.master_data_id, 'UniformOutput', false));
-    trainingDataX_1 = diveface_feature(trainingDataX_1,:);
+%     trainingDataX_1 = diveface_feature(trainingDataX_1,:);
     trainingDataX_2 = cell2mat(arrayfun(@(x) find(x==diveface_data_id), ...
         training_paired_label.paired_data_id, 'UniformOutput', false));
-    trainingDataX_2 = diveface_feature(trainingDataX_2,:);
+%     trainingDataX_2 = diveface_feature(trainingDataX_2,:);
     training_data_id = [training_paired_label.master_data_id training_paired_label.paired_data_id];
     trainingDataY = training_paired_label.paired_label;
 
 %     % Test data
     testDataX_1 = cell2mat(arrayfun(@(x) find(x==diveface_data_id), ...
         test_paired_label.master_data_id, 'UniformOutput', false));
-    testDataX_1 = diveface_feature(testDataX_1,:);
+%     testDataX_1 = diveface_feature(testDataX_1,:);
     testDataX_2 = cell2mat(arrayfun(@(x) find(x==diveface_data_id), ...
         test_paired_label.paired_data_id, 'UniformOutput', false));
-    testDataX_2 = diveface_feature(testDataX_2,:);
+%     testDataX_2 = diveface_feature(testDataX_2,:);
     test_data_id = [test_paired_label.master_data_id test_paired_label.paired_data_id];
     testDataY = test_paired_label.paired_label;
     
@@ -221,58 +221,73 @@ for experiment_round = do_experiment
 
     % Run experiment
     disp('Running experiment..');
-    
-    % stopwatch
-    running_time = tic;
-    
-%     % Find optimal parameter
-%     disp(['Running ' num2str(numb_cv) '-fold cross validation..']);
-%     [foldLog, avgFoldLog] = dist_parallelCV_new(kFoldIdx_data_id, trainingDataX_1, trainingDataX_2, ...
-%     	trainingDataY, training_data_id, 'distFunction', distFunction, 'seed', experiment_round);
-%     
-%     % Test model
-%     disp('Testing model..');
-%     [trainingResult, testResult, ~] = TestDist_parallelParams( ...
-%         trainingDataX_1, trainingDataX_2, trainingDataY, training_data_id, ...
-%         testDataX_1, testDataX_2, testDataY, test_data_id, ...
-%         'distFunction', distFunction);
+    try
+        % stopwatch
+        running_time = tic;
 
-    % Find optimal parameter
-    [ foldLog, avgFoldLog ] = celmCV(kFoldIdx, ...
-        trainingDataX_1, trainingDataX_2, trainingDataY, training_data_id, ...
-        'seed', experiment_round, 'hiddenNodes', hiddenNodes, ...
-        'regularizationC', regularizationC, 'distFunction', distFunction, ...
-        'select_weight_type', select_weight_type);
+        % Find optimal parameter
+        disp(['Running ' num2str(numb_cv) '-fold cross validation..']);
+        [ foldLog, avgFoldLog ] = celmCV_2(kFoldIdx_data_id, ...
+            trainingDataX_1, trainingDataX_2, training_data_id, trainingDataY, diveface_feature, ...
+            'seed', experiment_round, 'hiddenNodes', hiddenNodes, 'regularizationC', ...
+            regularizationC, 'distFunction', distFunction, ...
+            'select_weight_type', select_weight_type);
 
-    % Test model
-    [trainingResult, testResult, ~] = TestCELMParams( ...
-        trainingDataX_1, trainingDataX_2, trainingDataY, training_data_id, ...
-        testDataX_1, testDataX_2, testDataY, test_data_id, ...
-        'hiddenNodes', avgFoldLog.hiddenNodes(1), 'distFunction', distFunction, ...
-        'regularizationC', avgFoldLog.regC(1), 'seed', random_seed, ...
-        'select_weight_type', select_weight_type);
-    
-    % Save
-    if ~strcmp(experiment_mode, 'test')
-        disp('Saving..');
-        data_log = table({foldLog}, {trainingResult}, {testResult}, ...
-            'variablenames', {'foldLog' 'trainingResult' 'testResult'});
-        my_filename = [filename '_' distFunction '_' num2str(experiment_round)];
-        my_save_path = [save_path filesep my_filename];
-        eval([my_filename ' = data_log;']);
-        save(my_save_path, my_filename,'-v7.3');
-        eval(['clear ' my_filename])
+        % Save
+        if ~strcmp(experiment_mode, 'test')
+            disp('Saving..');
+            data_log = table({foldLog}, {avgFoldLog}, ...
+                'variablenames', {'foldLog' 'avgFoldLog'});
+            my_filename = ['foldLog_' filename '_' distFunction '_' ...
+                select_weight_type '_' num2str(experiment_round)];
+            my_save_path = [save_path filesep my_filename];
+            eval([my_filename ' = data_log;']);
+            save(my_save_path, my_filename,'-v7.3');
+            eval(['clear ' my_filename])
+        end
+
+        best_hiddenNodes = avgFoldLog.hiddenNodes(1);
+        best_regC = avgFoldLog.regC(1);
+        clear avgFoldLog data_log
+
+        % Test model
+        disp('Testing model..');
+        [trainingResult, testResult, ~] = TestCELMParams_2( ...
+            trainingDataX_1, trainingDataX_2, training_data_id, trainingDataY, ...
+            testDataX_1, testDataX_2, test_data_id, testDataY, diveface_feature,...
+            'hiddenNodes', best_hiddenNodes, 'regularizationC', ...
+            best_regC, 'seed', experiment_round, ...
+            'distFunction', distFunction, 'select_weight_type', select_weight_type);
+
+        % Save
+        if ~strcmp(experiment_mode, 'test')
+            disp('Saving..');
+            data_log = table({foldLog}, {trainingResult}, {testResult}, ...
+                'variablenames', {'foldLog' 'trainingResult' 'testResult'});
+            my_filename = [filename '_' distFunction '_' ...
+                select_weight_type '_' num2str(experiment_round)];
+            my_save_path = [save_path filesep my_filename];
+            eval([my_filename ' = data_log;']);
+            save(my_save_path, my_filename,'-v7.3');
+            eval(['clear ' my_filename])
+        end
+
+        clear foldLog avgFoldLog trainingResult testResult data_log
+
+        % stopwatch
+        running_time = toc(running_time);
+
+        disp(['Finished experiment ' num2str(experiment_round) ' from ' method_name '.']);
+        MailNotify('Subject', ['Experiment ' my_filename ' finished'], ...
+            'Message', ['Experiment ' my_filename ' has been finished at ' ...
+            char(datetime('now','TimeZone','+07:00')) '. (' num2str(running_time) ' seconds)']);
+
+    catch ME
+        MailNotify('Subject', [ my_filename ' got ERROR '], ...
+            'Message', [ ME.message ' at ' char(datetime('now','TimeZone','+07:00'))]);
+
+        clear foldLog avgFoldLog
     end
-
-    clear foldLog avgFoldLog trainingResult testResult data_log
-    
-    % stopwatch
-    running_time = toc(running_time);
-
-    disp(['Finished experiment ' num2str(experiment_round) ' from ' method_name ' ' distFunction '.']);
-    MailNotify('Subject', ['Experiment ' my_filename ' finished'], ...
-        'Message', ['Experiment ' my_filename ' has been finished at ' ...
-        char(datetime('now','TimeZone','+07:00')) '. (' num2str(running_time) ' seconds)']);
     
     clear training_paired_label test_paired_label
 end

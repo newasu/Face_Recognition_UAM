@@ -9,7 +9,7 @@ function [ trainingResult, testResult, testCorrectIdx ] = TestPELM2Params_2(...
     regularizationC = getAdditionalParam( 'regularizationC', varargin, 1 );
     combine_rule = getAdditionalParam( 'combine_rule', varargin, 'sum' ); % sum minus multiply distance mean
     seed = getAdditionalParam( 'seed', varargin, 1 );
-    select_weight_type = getAdditionalParam( 'select_weight_type', varargin, 'random-select' ); % randomselect randomgenerate
+    select_weight_type = getAdditionalParam( 'select_weight_type', varargin, 'randomselect' ); % randomselect randomgenerate
     
     % test training data
     [~, score, mdl, label_mat, trainingTime, testTime] = pelm2Classify_2(...

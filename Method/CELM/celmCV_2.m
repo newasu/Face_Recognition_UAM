@@ -1,11 +1,10 @@
-function [foldLog, avgFoldLog] = pelm2CV_new_2(foldIdx, data_1, data_2, data_id, data_label, data_feature, varargin)
-%PELMCV Summary of this function goes here
+function [foldLog, avgFoldLog] = celmCV_2(foldIdx, data_1, data_2, data_id, data_label, data_feature, varargin)
+%CELMCV Summary of this function goes here
 %   Detailed explanation goes here
 
     distFunction = getAdditionalParam( 'distFunction', varargin, 'euclidean' );  % euclidean cosine
     hiddenNodes = getAdditionalParam( 'hiddenNodes', varargin, [100] );
     regularizationC = getAdditionalParam( 'regularizationC', varargin, 1 );
-    combine_rule = getAdditionalParam( 'combine_rule', varargin, 'sum' ); % sum minus multiply distance mean
     seed = getAdditionalParam( 'seed', varargin, 1 );
     select_weight_type = getAdditionalParam( 'select_weight_type', varargin, 'randomselect' ); % randomselect randomgenerate
     
@@ -34,15 +33,15 @@ function [foldLog, avgFoldLog] = pelm2CV_new_2(foldIdx, data_1, data_2, data_id,
         testData_2 = data_2(foldIdx(fold,:),:);
         testLabel = data_label(foldIdx(fold,:),:);
         testFileNames = data_id(foldIdx(fold,:),:);
-%         test_data_id = data_id(foldIdx(fold,:),:);
+%         testCode = data_code(foldIdx(fold,:),:);
         
         for i = 1 : welmParam
-            [~, score, mdl, label_mat, trainingTime, testTime] = pelm2Classify_2(...
+            [~, score, mdl, label_mat, trainingTime, testTime] = celmClassify_2(...
                 trainingData_1, trainingData_2, trainingLabel, training_data_id, ...
                 testData_1, testData_2, testLabel, testFileNames, data_feature, ...
-                'seed', seed, 'combine_rule', combine_rule, ...
+                'seed', seed, 'regularizationC', paramAll(2,i), ...
                 'distFunction', distFunction, 'hiddenNodes', paramAll(1,i), ...
-                'regularizationC', paramAll(2,i), 'select_weight_type', select_weight_type);
+                'select_weight_type', select_weight_type);
             
             % exclude model for reducing file size
 %             mdl = [];
