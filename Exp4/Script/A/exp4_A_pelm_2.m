@@ -4,7 +4,7 @@ clear all
 
 % Settings
 
-experiment_mode = 'test';
+experiment_mode = '';
 experiment_name = 'Exp4';
 sub_experiment_name = 'A';
 method_name = 'pelm';
@@ -26,10 +26,12 @@ default_data_store_path = pwd;
 idcs = strfind(pwd,filesep);
 default_data_store_path = [default_data_store_path(1:idcs(end)-1) ...
     filesep 'Face_Recognition_UAM_data_store'];
-saveFolderPath = {'Result', experiment_name, [experiment_name '_' sub_experiment_name]};
+saveFolderPath = {'Result', experiment_name, [experiment_name '_' num2str(number_subdataset)], ...
+    [experiment_name '_' num2str(number_subdataset) '_' sub_experiment_name]};
 filename = [saveFolderPath{end} '_' method_name];
 save_path = MakeChainFolder(saveFolderPath, 'target_path', default_data_store_path);
-paired_list_save_path = MakeChainFolder({'Other', experiment_name}, 'target_path', default_data_store_path);
+paired_list_save_path = MakeChainFolder({'Other', experiment_name, ...
+            [experiment_name '_' num2str(number_subdataset)]}, 'target_path', default_data_store_path);
 clear idcs default_data_store_path saveFolderPath
 
 % %Load data
@@ -83,12 +85,12 @@ for experiment_round = do_experiment
 
     % Load training paired sample list
     temp_paired_list_save_path = [paired_list_save_path filesep ...
-        'training_paired_label_' num2str(experiment_round)];
+            experiment_name '_' num2str(number_subdataset) '_training_paired_label_' num2str(experiment_round)];
     if exist([temp_paired_list_save_path '.mat'], 'file') && ~strcmp(experiment_mode, 'test')
         disp('Loading training_paired_label..');
         load(temp_paired_list_save_path);
     else
-        disp('Loading training_paired_label..');
+        disp('Generateing training_paired_label..');
         training_paired_label = PairSampleClassesEqually(...
             training_set_sample_idx, subdataset_label, diveface_label,...
             'random_seed', experiment_round);
@@ -97,7 +99,7 @@ for experiment_round = do_experiment
 
     % Load test paired sample list
     temp_paired_list_save_path = [paired_list_save_path filesep ...
-        'test_paired_label_' num2str(experiment_round)];
+            experiment_name '_' num2str(number_subdataset) '_test_paired_label_' num2str(experiment_round)];
     if exist([temp_paired_list_save_path '.mat'], 'file') && ~strcmp(experiment_mode, 'test')
         disp('Loading test_paired_label..');
         load(temp_paired_list_save_path);

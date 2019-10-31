@@ -2,8 +2,7 @@
 pos_class = 'same';
 
 % load data
-result_path = ['/Users/Wasu/Google Drive/MacBook/PhD''s Degree/New/' ...
-    'SourceCode/Face_Recognition_UAM_data_store/Result/Exp3'];
+result_path = [pwd '_data_store/Result/Exp3'];
 my_file_path = dir([result_path '/**/*.mat']);
 my_file_path = my_file_path(contains({my_file_path.name}, '_01'));
 

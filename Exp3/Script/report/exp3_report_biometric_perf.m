@@ -3,8 +3,8 @@ function [biometric_perf_threshold, biometric_perf_mat] = exp3_report_biometric_
 %EXP3_REPORT_BIOMETRIC_PERF Summary of this function goes here
 %   Detailed explanation goes here
 
-    % FAR = FMR = False Acceptance Rate = should reject but accpet
-    % FRR = FNMR = False Rejection Rate = should accpet but reject
+    % FAR (False Acceptance Rate) = FMR (False Match Rate) = should reject but accpet
+    % FRR (False Rejection Rate) = FNMR (False Non-Match Rate) = should accpet but reject
     % EER = Equal Error Rate = crossing point between FAR meet FRR
     
     positive_class_score_order = getAdditionalParam( 'positive_class_score_order', varargin, 'ascend');
