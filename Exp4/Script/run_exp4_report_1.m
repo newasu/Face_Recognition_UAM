@@ -1,8 +1,9 @@
 
 % Exp4_A_pelm_euclidean_distance_randomselect Exp4_B_dist_euclidean
 
-data_name = 'Exp4_B_dist_euclidean';
-data_path = [pwd '_data_store/Result/Exp4'];
+data_name = 'Exp4_30_B_dist_euclidean';
+saveFolderPath = {'Result', 'Exp4', 'Exp4_30', 'Exp4_30_average'};
+data_path = [pwd '_data_store/' saveFolderPath{1} '/' saveFolderPath{2} '/' saveFolderPath{3}];
 
 % Exact
 [data_result, data_result_all] = exp4_exact_result(data_name, data_path);
@@ -36,7 +37,6 @@ default_data_store_path = pwd;
 idcs = strfind(pwd,filesep);
 default_data_store_path = [default_data_store_path(1:idcs(end)-1) ...
     filesep 'Face_Recognition_UAM_data_store'];
-saveFolderPath = {'Result', 'Exp4', 'Exp4_average'};
 save_path = MakeChainFolder(saveFolderPath, 'target_path', default_data_store_path);
 my_data_name = [data_name '_average_class'];
 my_save_path = [save_path filesep my_data_name];

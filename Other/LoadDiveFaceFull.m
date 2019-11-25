@@ -9,7 +9,7 @@ function [raw_feature, label] = LoadDiveFaceFull(varargin)
         filesep 'Face_Recognition_UAM_data_store' filesep 'Dataset' filesep 'DiveFace'];
     
     dataset_path = getAdditionalParam( 'dataset_path', varargin, root_data_store_path );
-    network_type = getAdditionalParam( 'network_type', varargin, 'ResNet' ); % ResNet VGG
+    network_type = getAdditionalParam( 'network_type', varargin, 'ResNet' ); % ResNet VGG ArcFace
     
     read_type = getAdditionalParam( 'read_type', varargin, 'mat' );
     

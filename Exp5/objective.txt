@@ -1,0 +1,4 @@
+Face_Recognition_UAM > Exp5
+
+Objective:
+To pick only used images from whole DiveFace4K.

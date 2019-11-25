@@ -1,27 +1,22 @@
-% exp4 A classify Is that same person by euclidean PELM2
+% exp4 B classify Is that same person by euclidean distance
 
 clear all
 
 % Settings
 
-experiment_mode = ''; % test
+experiment_mode = ''; %
 experiment_name = 'Exp4';
-sub_experiment_name = 'A';
-method_name = 'pelm';
-do_experiment = [1 2]; % run experiment number
+sub_experiment_name = 'B';
+method_name = 'dist';
+do_experiment = [1:30]; % run experiment number
 
 dataset_type = 'ArcFace'; % ResNet VGG ArcFace
 
-number_subdataset = 10;
+number_subdataset = 30;
 numb_cv = 5; % cv for optimal parameters
 
-% PELM's parameters
-hiddenNodes = 10:10:100;
-regularizationC = power(10,-6:1:6);
-select_weight_type = 'randomselect'; % randomselect randomgenerate
-distFunction = 'euclidean'; % euclidean cosine euclideanmm
-all_combine_rule = {'distance', 'mean', 'multiply', 'sum'}; % distance mean multiply sum
-% all_combine_rule = {'distance', 'mean'};
+% Distance's parameter
+distFunction = 'euclidean'; % euclidean cosine
 
 % Save path
 default_data_store_path = pwd;
@@ -37,7 +32,7 @@ paired_list_save_path = MakeChainFolder({'Other', experiment_name, ...
 clear idcs default_data_store_path saveFolderPath
 
 % %Load data
-[diveface_feature, diveface_label] = LoadDiveFaceFull();
+[diveface_feature, diveface_label] = LoadDiveFaceFull('network_type', dataset_type);
 diveface_data_id = diveface_label.data_id;
 
 % Remove user containing less than contain_image
@@ -206,20 +201,20 @@ for experiment_round = do_experiment
     % Training data
     trainingDataX_1 = cell2mat(arrayfun(@(x) find(x==diveface_data_id), ...
         training_paired_label.master_data_id, 'UniformOutput', false));
-%     trainingDataX_1 = diveface_feature(trainingDataX_1,:);
+    trainingDataX_1 = diveface_feature(trainingDataX_1,:);
     trainingDataX_2 = cell2mat(arrayfun(@(x) find(x==diveface_data_id), ...
         training_paired_label.paired_data_id, 'UniformOutput', false));
-%     trainingDataX_2 = diveface_feature(trainingDataX_2,:);
+    trainingDataX_2 = diveface_feature(trainingDataX_2,:);
     training_data_id = [training_paired_label.master_data_id training_paired_label.paired_data_id];
     trainingDataY = training_paired_label.paired_label;
 
 %     % Test data
     testDataX_1 = cell2mat(arrayfun(@(x) find(x==diveface_data_id), ...
         test_paired_label.master_data_id, 'UniformOutput', false));
-%     testDataX_1 = diveface_feature(testDataX_1,:);
+    testDataX_1 = diveface_feature(testDataX_1,:);
     testDataX_2 = cell2mat(arrayfun(@(x) find(x==diveface_data_id), ...
         test_paired_label.paired_data_id, 'UniformOutput', false));
-%     testDataX_2 = diveface_feature(testDataX_2,:);
+    testDataX_2 = diveface_feature(testDataX_2,:);
     test_data_id = [test_paired_label.master_data_id test_paired_label.paired_data_id];
     testDataY = test_paired_label.paired_label;
     
@@ -227,78 +222,43 @@ for experiment_round = do_experiment
 
     % Run experiment
     disp('Running experiment..');
-    for combine_rule_round = 1 : numel(all_combine_rule)
-        
-        try
-            % stopwatch
-            running_time = tic;
-
-            % Find optimal parameter
-            disp(['Running ' num2str(numb_cv) '-fold cross validation..']);
-            [ foldLog, avgFoldLog ] = pelm2CV_new_2(kFoldIdx_data_id, ...
-                trainingDataX_1, trainingDataX_2, training_data_id, trainingDataY, diveface_feature, ...
-                'seed', experiment_round, 'hiddenNodes', hiddenNodes, 'regularizationC', ...
-                regularizationC, 'distFunction', distFunction, ...
-                'combine_rule', all_combine_rule{combine_rule_round}, ...
-                'select_weight_type', select_weight_type);
-            
-            % Save
-            if ~strcmp(experiment_mode, 'test')
-                disp('Saving..');
-                data_log = table({foldLog}, {avgFoldLog}, ...
-                    'variablenames', {'foldLog' 'avgFoldLog'});
-                my_filename = ['foldLog_' filename '_' distFunction '_' ...
-                    all_combine_rule{combine_rule_round} '_' select_weight_type '_' num2str(experiment_round)];
-                my_save_path = [save_path filesep my_filename];
-                eval([my_filename ' = data_log;']);
-                save(my_save_path, my_filename,'-v7.3');
-                eval(['clear ' my_filename])
-            end
-            
-            best_hiddenNodes = avgFoldLog.hiddenNodes(1);
-            best_regC = avgFoldLog.regC(1);
-            clear avgFoldLog data_log
-
-            % Test model
-            disp('Testing model..');
-            [trainingResult, testResult, ~] = TestPELM2Params_2( ...
-                trainingDataX_1, trainingDataX_2, training_data_id, trainingDataY, ...
-                testDataX_1, testDataX_2, test_data_id, testDataY, diveface_feature,...
-                'hiddenNodes', best_hiddenNodes, 'regularizationC', ...
-                best_regC, 'seed', experiment_round, ...
-                'distFunction', distFunction, 'select_weight_type', select_weight_type, ...
-                'combine_rule', all_combine_rule{combine_rule_round});
-
-            % Save
-            if ~strcmp(experiment_mode, 'test')
-                disp('Saving..');
-                data_log = table({foldLog}, {trainingResult}, {testResult}, ...
-                    'variablenames', {'foldLog' 'trainingResult' 'testResult'});
-                my_filename = [filename '_' distFunction '_' ...
-                    all_combine_rule{combine_rule_round} '_' select_weight_type '_' num2str(experiment_round)];
-                my_save_path = [save_path filesep my_filename];
-                eval([my_filename ' = data_log;']);
-                save(my_save_path, my_filename,'-v7.3');
-                eval(['clear ' my_filename])
-            end
-
-            clear foldLog avgFoldLog trainingResult testResult data_log
-
-            % stopwatch
-            running_time = toc(running_time);
-
-            disp(['Finished experiment ' num2str(experiment_round) ' from ' method_name ' ' all_combine_rule{combine_rule_round} '.']);
-            MailNotify('Subject', ['Experiment ' my_filename ' finished'], ...
-                'Message', ['Experiment ' my_filename ' has been finished at ' ...
-                char(datetime('now','TimeZone','+07:00')) '. (' num2str(running_time) ' seconds)']);
-        
-        catch ME
-            MailNotify('Subject', [ my_filename ' got ERROR '], ...
-                'Message', [ ME.message ' at ' char(datetime('now','TimeZone','+07:00'))]);
-
-            clear foldLog avgFoldLog
-        end
+    
+    % stopwatch
+    running_time = tic;
+    
+    % Find optimal parameter
+    disp(['Running ' num2str(numb_cv) '-fold cross validation..']);
+    [foldLog, avgFoldLog] = dist_parallelCV_new(kFoldIdx_data_id, trainingDataX_1, trainingDataX_2, ...
+    	trainingDataY, training_data_id, 'distFunction', distFunction, 'seed', experiment_round);
+    
+    % Test model
+    disp('Testing model..');
+    [trainingResult, testResult, ~] = TestDist_parallelParams( ...
+        trainingDataX_1, trainingDataX_2, trainingDataY, training_data_id, ...
+        testDataX_1, testDataX_2, testDataY, test_data_id, ...
+        'distFunction', distFunction, 'threshold', avgFoldLog.threshold);
+    
+    % Save
+    if ~strcmp(experiment_mode, 'test')
+        disp('Saving..');
+        data_log = table({foldLog}, {trainingResult}, {testResult}, ...
+            'variablenames', {'foldLog' 'trainingResult' 'testResult'});
+        my_filename = [filename '_' distFunction '_' num2str(experiment_round)];
+        my_save_path = [save_path filesep my_filename];
+        eval([my_filename ' = data_log;']);
+        save(my_save_path, my_filename,'-v7.3');
+        eval(['clear ' my_filename])
     end
+
+    clear foldLog avgFoldLog trainingResult testResult data_log
+    
+    % stopwatch
+    running_time = toc(running_time);
+
+    disp(['Finished experiment ' num2str(experiment_round) ' from ' method_name ' ' distFunction '.']);
+    MailNotify('Subject', ['Experiment ' my_filename ' finished'], ...
+        'Message', ['Experiment ' my_filename ' has been finished at ' ...
+        char(datetime('now','TimeZone','+07:00')) '. (' num2str(running_time) ' seconds)']);
     
     clear training_paired_label test_paired_label
 end

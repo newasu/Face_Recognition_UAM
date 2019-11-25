@@ -109,8 +109,18 @@ end
 
 function [ HH ] = simKernel(XX, WW, distFunc)
     gpu_round_step = 18000;
-    
-    if strcmp(distFunc, 'euclidean') && gpuDeviceCount > 0 ...
+    if strcmp(distFunc, 'euclidean') && gpuDeviceCount == 0
+        XXXX = (sum((XX).^2, 2));
+        XXWW = ((XX) * (WW)');
+        WWWW = (sum((WW).^2, 2)');
+        HH = bsxfun(@minus, XXXX, 2 * XXWW);
+        clear XXXX XXWW
+        HH = bsxfun(@plus, WWWW, HH);
+        clear WWWW
+        HH = sqrt(HH);
+        HH = real(HH);
+        
+    elseif strcmp(distFunc, 'euclidean') && gpuDeviceCount > 0 ...
             && size(XX,1) <= gpu_round_step && size(WW,1) <= gpu_round_step
         XXXX = (sum(gpuArray(XX).^2, 2));
         XXWW = (gpuArray(XX) * gpuArray(WW)');
